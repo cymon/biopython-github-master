@@ -203,14 +203,17 @@ class _AbstractParameter:
     o is_set -- if the parameter has been set
 
     o value -- the value of a parameter
+
+    o equate -- use "=" to join param and value in command line
     """
     def __init__(self, names = [], types = [], checker_function = None, 
-                 is_required = 0, description = ""):
+                 is_required = 0, description = "", equate = 1):
         self.names = names
         self.param_types = types
         self.checker_function = checker_function
         self.description = description
         self.is_required = is_required
+        self.equate = equate
 
         self.is_set = 0
         self.value = None
@@ -218,26 +221,21 @@ class _AbstractParameter:
 class _Option(_AbstractParameter):
     """Represent an option that can be set for a program.
 
-    This holds UNIXish options like --append=yes and -a yes
+    This holds UNIXish options like:
+    --append=yes
+    --append yes
+    --append
+    -append=yes
+    -append yes
+    -append
     """
     def __str__(self):
-        """Return the value of this option for the commandline.
+        """Return this option for the commandline.
         """
-        # first deal with long options
-        if self.names[0].find("--") >= 0:
-            output = "%s" % self.names[0]
-            if self.value is not None:
-                output += "=%s " % self.value
-            else:
-                output += " "
-        # now short options
-        elif self.names[0].find("-") >= 0:
-            output = "%s " % self.names[0]
-            if self.value is not None:
-                output += "%s " % self.value
-        else:
-            raise ValueError("Unrecognized option type: %s" % self.names[0])
-
+        output = "%s" % self.names[0]
+        if self.value is not None:
+            output += "%s%s " % \
+                (self.equate and "=" or " ", self.value)
         return output
 
 class _Argument(_AbstractParameter):
