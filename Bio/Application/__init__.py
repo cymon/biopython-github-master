@@ -236,6 +236,8 @@ class _Option(_AbstractParameter):
         if self.value is not None:
             output += "%s%s " % \
                 (self.equate and "=" or " ", self.value)
+        else:
+            output += " "
         return output
 
 class _Argument(_AbstractParameter):
