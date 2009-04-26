@@ -109,8 +109,19 @@ class ApplicationResult:
 
     def get_result(self, output_name):
         """Retrieve result information for the given output.
+
+        Supports any of the defined parameters aliases (assuming the
+        parameter is defined as an output).
         """
-        return self._results[output_name]
+        try :
+            return self._results[output_name]
+        except KeyError, err :
+            #Try the aliases...
+            for parameter in self._cl.parameters:
+                if output_name in parameter.names :
+                    return self._results[parameter.names[-1]]
+            #No, really was a key error:
+            raise err
 
     def available_results(self):
         """Retrieve a list of all available results.
@@ -137,23 +148,22 @@ class AbstractCommandline:
             if parameter.is_required and not(parameter.is_set):
                 raise ValueError("Parameter %s is not set." % parameter.names)
             if parameter.is_set:
+                #This will include a trailing space:
                 commandline += str(parameter)
-
         return commandline
 
     def set_parameter(self, name, value = None):
         """Set a commandline option for a program.
         """
-        set_option = 0
+        set_option = False
         for parameter in self.parameters:
             if name in parameter.names:
                 if value is not None:
                     self._check_value(value, name, parameter.checker_function)
                     parameter.value = value
-                parameter.is_set = 1
-                set_option = 1
-
-        if set_option == 0:
+                parameter.is_set = True
+                set_option = True
+        if not set_option :
             raise ValueError("Option name %s was not found." % name)
 
     def _check_value(self, value, name, check_function):
@@ -164,6 +174,7 @@ class AbstractCommandline:
         this function will raise an error if the value is not valid, or
         finish silently otherwise.
         """
+        #TODO - Allow check_function to return True/False?
         if check_function is not None:
             is_good = check_function(value)
             if is_good in [0, 1]: # if we are dealing with a good/bad check
@@ -195,6 +206,8 @@ class _AbstractParameter:
     raise an error when given a bad value, or return a [0, 1] decision on
     whether the value is correct.
 
+    o equate -- should an equals sign be inserted if a value is used?
+
     o description -- a description of the option.
 
     o is_required -- a flag to indicate if the parameter must be set for
@@ -207,15 +220,16 @@ class _AbstractParameter:
     o equate -- use "=" to join param and value in command line
     """
     def __init__(self, names = [], types = [], checker_function = None, 
-                 is_required = 0, description = "", equate = 1):
+                 is_required = False, description = "", equate=True):
         self.names = names
         self.param_types = types
         self.checker_function = checker_function
         self.description = description
+        self.equate = equate
         self.is_required = is_required
         self.equate = equate
 
-        self.is_set = 0
+        self.is_set = False
         self.value = None
 
 class _Option(_AbstractParameter):
@@ -230,21 +244,26 @@ class _Option(_AbstractParameter):
     -append
     """
     def __str__(self):
-        """Return this option for the commandline.
+        """Return the value of this option for the commandline.
+
+        Includes a trailing space.
         """
-        output = "%s" % self.names[0]
-        if self.value is not None:
-            output += "%s%s " % \
-                (self.equate and "=" or " ", self.value)
-        else:
-            output += " "
-        return output
+        # Note: Before equate was handled explicitly, the old
+        # code would do either "--name " or "--name=value ",
+        # or " -name " or " -name value ".  This choice is now
+        # now made explicitly when setting up the option.
+        if self.value is None :
+            return "%s " % self.names[0]
+        elif self.equate :
+            return "%s=%s " % (self.names[0], self.value)
+        else :
+            return "%s %s " % (self.names[0], self.value)
 
 class _Argument(_AbstractParameter):
     """Represent an argument on a commandline.
     """
     def __str__(self):
-        if self.value is not None:
-            return "%s " % self.value
-        else:
+        if self.value is None:
             return " "
+        else :
+            return "%s " % self.value
