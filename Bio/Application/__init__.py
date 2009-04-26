@@ -216,8 +216,6 @@ class _AbstractParameter:
     o is_set -- if the parameter has been set
 
     o value -- the value of a parameter
-
-    o equate -- use "=" to join param and value in command line
     """
     def __init__(self, names = [], types = [], checker_function = None, 
                  is_required = False, description = "", equate=True):
@@ -227,7 +225,6 @@ class _AbstractParameter:
         self.description = description
         self.equate = equate
         self.is_required = is_required
-        self.equate = equate
 
         self.is_set = False
         self.value = None
@@ -235,13 +232,7 @@ class _AbstractParameter:
 class _Option(_AbstractParameter):
     """Represent an option that can be set for a program.
 
-    This holds UNIXish options like:
-    --append=yes
-    --append yes
-    --append
-    -append=yes
-    -append yes
-    -append
+    This holds UNIXish options like --append=yes and -a yes
     """
     def __str__(self):
         """Return the value of this option for the commandline.
