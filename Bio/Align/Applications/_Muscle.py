@@ -1,3 +1,8 @@
+# Copyright 2009 by Cymon J. Cox.  All rights reserved.
+# This code is part of the Biopython distribution and governed by its
+# license.  Please see the LICENSE file that should have been included
+# as part of this package.
+
 """
 Bio.Application command line for the multiple alignment programme MUSCLE
 

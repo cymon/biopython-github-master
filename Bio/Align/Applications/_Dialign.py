@@ -1,3 +1,8 @@
+# Copyright 2009 by Cymon J. Cox.  All rights reserved.
+# This code is part of the Biopython distribution and governed by its
+# license.  Please see the LICENSE file that should have been included
+# as part of this package.
+
 """
 Bio.Application command line for the multiple alignment programme DIALIGN
 
@@ -7,6 +12,8 @@ Citations:
 
 B. Morgenstern (2004). DIALIGN: Multiple DNA and Protein Sequence Alignment
 at BiBiServ. Nucleic Acids Research 32, W33-W36.
+
+Last checked against version: 2.2
 """
 import os
 import types
@@ -33,7 +40,7 @@ class DialignCommandline(Application.AbstractCommandline):
             _Option(["-afc_v", "afc_v"], ["input"],
                     lambda x: 0, #Does not take a value
                     0,
-                    "like '-afc' but verbose: fragments are explicitly " + \
+                    "Like '-afc' but verbose: fragments are explicitly " + \
                     "printed. WARNING: this file can be EVEN BIGGER !",
                     0),
 
@@ -290,7 +297,7 @@ class DialignCommandline(Application.AbstractCommandline):
                     "specified that are NOT considered for pairwise alignment",
                     0),
 
-            _Argument(["input"], ["input"], os.path.exists, 1,
+            _Argument(["input"], ["input", "file"], os.path.exists, 1,
                       "Input file name. Must be FASTA format")
 
             ]

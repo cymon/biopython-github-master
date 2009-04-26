@@ -4,14 +4,15 @@
 # as part of this package.
 
 """
-Bio.Application command line for the multiple alignment programme CLUSTALW
+Bio.Application command line for the multiple alignment programme CLUSTALW2
 
-http://bibiserv.techfak.uni-bielefeld.de/dialign/welcome.html
+http://www.clustal.org/
 
-Citations:
+Citation:
 
-B. Morgenstern (2004). DIALIGN: Multiple DNA and Protein Sequence Alignment
-at BiBiServ. Nucleic Acids Research 32, W33-W36.
+Larkin MA, Blackshields G, Brown NP, Chenna R, McGettigan PA, McWilliam H, 
+Valentin F, Wallace IM, Wilm A, Lopez R, Thompson JD, Gibson TJ, Higgins DG.
+(2007). Clustal W and Clustal X version 2.0. Bioinformatics, 23, 2947-2948. 
 
 Last checked against version: 2.0.10
 """
