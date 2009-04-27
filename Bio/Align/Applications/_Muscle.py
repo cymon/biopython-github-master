@@ -16,9 +16,6 @@ and high throughput, Nucleic Acids Research 32(5), 1792-97.
 Edgar, R.C. (2004) MUSCLE: a multiple sequence alignment method with reduced
 time and space complexity. BMC Bioinformatics 5(1): 113.
 
-Functions MuscleAlign and ProfileMuscleAlign use the Bio.Application interface
-and return a ApplicationResult object
-
 Last checked against version: 3.7
 """
 
