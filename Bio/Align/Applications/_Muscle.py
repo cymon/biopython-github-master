@@ -16,9 +16,6 @@ and high throughput, Nucleic Acids Research 32(5), 1792-97.
 Edgar, R.C. (2004) MUSCLE: a multiple sequence alignment method with reduced
 time and space complexity. BMC Bioinformatics 5(1): 113.
 
-Functions MuscleAlign and ProfileMuscleAlign use the Bio.Application interface
-and return a ApplicationResult object
-
 Last checked against version: 3.7
 """
 
@@ -47,11 +44,11 @@ class MuscleCommandline(Application.AbstractCommandline):
         self.program_name = cmd
         self.parameters = \
            [
-            _Option(["-in", "input"], ["input", "file"],
+            _Option(["-in", "in"], ["input", "file"],
                     os.path.exists, 0, "Input filename",
                     0), #No equate
 
-            _Option(["-out", "output"], ["output", "file"],
+            _Option(["-out", "out"], ["output", "file"],
                     None, 0, "Output filename",
                     0), #No equate
 
@@ -60,12 +57,12 @@ class MuscleCommandline(Application.AbstractCommandline):
                     0, "Perform a profile alignment",
                     0), #No equate
 
-            _Option(["-in1", "infile1"], ["input", "file"],
+            _Option(["-in1", "in1"], ["input", "file"],
                     os.path.exists, 0,
                     "First input filename for profile alignment",
                     0),
 
-            _Option(["-in2", "infile2"], ["input", "file"],
+            _Option(["-in2", "in2"], ["input", "file"],
                     os.path.exists, 0,
                     "Second input filename for a profile alignment",
                     0),

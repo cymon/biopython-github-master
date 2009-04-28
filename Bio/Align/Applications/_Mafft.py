@@ -59,7 +59,7 @@ class MafftCommandline(Application.AbstractCommandline):
                     0), #No equate
 
             #Distance is calculated based on the number of shared 6mers. Default: on
-            _Option(["--6merpair", "6merpair"], ["input"], 
+            _Option(["--6merpair", "6merpair"], ["input"],
                      lambda x: 0, #Does not take a value
                      0,
                      "Distance is calculated based on the number of shared " + \
@@ -353,7 +353,7 @@ class MafftCommandline(Application.AbstractCommandline):
                     lambda x: 0, #Does not take a value
                     0,
                     "Do not report progress. Default: off",
-                    0),            
+                    0),
          
             #**** Input ****
 
