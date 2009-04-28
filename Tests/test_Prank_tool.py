@@ -15,7 +15,23 @@ from Bio.Align.Applications import PrankCommandline
 
 prank_exe = None
 if sys.platform=="win32":
-    raise MissingExternalDependencyError("Testing with PRANK not implemented on Windows yet")
+    try :
+        #This can vary depending on the Windows language.
+        prog_files = os.environ["PROGRAMFILES"]
+    except KeyError :
+        prog_files = r"C:\Program Files"
+    #For Windows, PRANK just comes as a zip file which contains the
+    #prank.exe file which the user could put anywhere.  We'll try a few
+    #sensible locations under Program Files... and then the full path.
+    likely_dirs = ["", #Current dir
+                   prog_files,
+                   os.path.join(prog_files,"Prank")] + sys.path
+    for folder in likely_dirs :
+        if os.path.isdir(folder) :
+            if os.path.isfile(os.path.join(folder, "prank.exe")) :
+                prank_exe = os.path.join(folder, "prank.exe")
+                break
+        if prank_exe : break
 else :
     import commands
     output = commands.getoutput("prank")
@@ -31,6 +47,9 @@ class PrankApplication(unittest.TestCase):
         self.infile1 = "Fasta/f002"
 
     def tearDown(self):
+        """
+        output.1.dnd  output.1.fas  output.1.xml  output.2.dnd  output.2.fas  output.2.xml
+        """
         if os.path.isfile("output.1.dnd"):
             os.remove("output.1.dnd")
         if os.path.isfile("output.1.fas"):
@@ -54,12 +73,12 @@ class PrankApplication(unittest.TestCase):
         """
         cmdline = PrankCommandline(prank_exe)
         cmdline.set_parameter("d", self.infile1)
+        self.assertEqual(str(cmdline), prank_exe + " -d=Fasta/f002 ")
         stdin, stdout, stderr = Application.generic_run(cmdline)
-        
-        self.assert_(stdin.return_code == 0)
+        self.assertEqual(stdin.return_code, 0)
         self.assert_("Total time" in stdout.read())
-        self.assert_(stderr.read() == "")
-        self.assert_(str(stdin._cl) == "prank -d=Fasta/f002 ")
+        self.assertEqual(stderr.read(), "")
+        self.assertEqual(str(stdin._cl), str(cmdline))
 
     def test_Prank_simple_with_NEXUS_output(self):
         """Simple round-trip through app with infile, output in NEXUS
@@ -70,12 +89,12 @@ class PrankApplication(unittest.TestCase):
         cmdline.set_parameter("f", 17) #17. NEXUS FORMAT
         cmdline.set_parameter("-noxml")
         cmdline.set_parameter("notree")
+        self.assertEqual(str(cmdline), prank_exe + " -d=Fasta/f002 -f=17 -noxml -notree ")
         stdin, stdout, stderr = Application.generic_run(cmdline)
-
-        self.assert_(stdin.return_code == 0)
+        self.assertEqual(stdin.return_code, 0)
         self.assert_("Total time" in stdout.read())
-        self.assert_(stderr.read() == "")
-        self.assert_(str(stdin._cl) == "prank -d=Fasta/f002 -f=17 -noxml -notree ")
+        self.assertEqual(stderr.read(), "")
+        self.assertEqual(str(stdin._cl), str(cmdline))
 
     def test_Prank_complex_command_line(self):
         """Round-trip with complex command line."""
@@ -90,12 +109,14 @@ class PrankApplication(unittest.TestCase):
         cmdline.set_parameter("-skipins")
         cmdline.set_parameter("-once")
         cmdline.set_parameter("realbranches")
+        self.assertEqual(str(cmdline), prank_exe + " -d=Fasta/f002 -noxml" + \
+                         " -notree -dots -gaprate=0.321 -gapext=0.6 -kappa=3" + \
+                         " -once -skipins -realbranches ")
         stdin, stdout, stderr = Application.generic_run(cmdline)
-
-        self.assert_(stdin.return_code == 0)
+        self.assertEqual(stdin.return_code, 0)
         self.assert_("Total time" in stdout.read())
-        self.assert_(stderr.read() == "")
-        self.assert_(str(stdin._cl) == "prank -d=Fasta/f002 -noxml -notree -dots -gaprate=0.321 -gapext=0.6 -kappa=3 -once -skipins -realbranches ")
+        self.assertEqual(stderr.read(), "")
+        self.assertEqual(str(stdin._cl), str(cmdline))
 
 if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity = 2)

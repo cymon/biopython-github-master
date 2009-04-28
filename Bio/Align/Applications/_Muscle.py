@@ -19,7 +19,6 @@ time and space complexity. BMC Bioinformatics 5(1): 113.
 Last checked against version: 3.7
 """
 
-import os
 import types
 from Bio import Application
 from Bio.Application import _Option
@@ -45,25 +44,30 @@ class MuscleCommandline(Application.AbstractCommandline):
         self.parameters = \
            [
             _Option(["-in", "in"], ["input", "file"],
-                    os.path.exists, 0, "Input filename",
+                    None, 0, "Input filename",
                     0), #No equate
 
             _Option(["-out", "out"], ["output", "file"],
                     None, 0, "Output filename",
                     0), #No equate
 
-            _Option(["-profile", "profile"], ["input", "file"],
+            _Option(["-diags", "diags"], ["input"],
+                    lambda x: 0, #Does not take a value
+                    0, "Find diagonals (faster for similar sequences)",
+                    0), #No equate
+            
+            _Option(["-profile", "profile"], ["input"],
                     lambda x: 0, #Does not take a value
                     0, "Perform a profile alignment",
                     0), #No equate
 
             _Option(["-in1", "in1"], ["input", "file"],
-                    os.path.exists, 0,
+                    None, 0,
                     "First input filename for profile alignment",
                     0),
 
             _Option(["-in2", "in2"], ["input", "file"],
-                    os.path.exists, 0,
+                    None, 0,
                     "Second input filename for a profile alignment",
                     0),
 
@@ -173,7 +177,7 @@ class MuscleCommandline(Application.AbstractCommandline):
             #loga            File name            None.              Log file name (append
             #                                                        to existing file).
             _Option(["-loga", "loga"], ["output", "file"],
-                    os.path.exists, 0,
+                    None, 0,
                     "Log file name (append to existing file)",
                     0),
 

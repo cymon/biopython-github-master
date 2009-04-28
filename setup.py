@@ -232,6 +232,7 @@ def is_Numpy_installed():
 PACKAGES = [
     'Bio',
     'Bio.Align',
+    'Bio.Align.Applications',
     'Bio.AlignIO',
     'Bio.AlignAce',
     'Bio.Alphabet',
@@ -262,7 +263,6 @@ PACKAGES = [
     'Bio.Graphics',
     'Bio.Graphics.GenomeDiagram',
     'Bio.HMM',
-    'Bio.IntelliGenetics',
     'Bio.InterPro',
     'Bio.KEGG',
     'Bio.KEGG.Compound',
@@ -272,9 +272,7 @@ PACKAGES = [
     'Bio.MEME',
     'Bio.Motif',
     'Bio.Motif.Parsers',
-    #'Bio.Motif.Applications', #New, deliberately left out for Biopython 1.50 
-    'Bio.MetaTool',
-    'Bio.NBRF',
+    'Bio.Motif.Applications',
     'Bio.Ndb',
     'Bio.NeuralNetwork',
     'Bio.NeuralNetwork.BackPropagation',
@@ -294,7 +292,6 @@ PACKAGES = [
     'Bio.Prosite',
     'Bio.Restriction',
     'Bio.Restriction._Update',
-    'Bio.Saf',
     'Bio.SCOP',
     'Bio.SeqIO',
     'Bio.SeqUtils',
@@ -308,7 +305,6 @@ PACKAGES = [
     'Bio.WWW',
     #Other top level packages,
     'BioSQL',
-    'Martel', #Deprecated as of Biopython 1.49
     ]
 
 # packages that require Numeric Python

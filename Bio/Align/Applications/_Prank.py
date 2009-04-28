@@ -3,23 +3,21 @@
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
 
-"""
-Bio.Application command line for the multiple alignment programme PRANK
+"""Bio.Application command line for the multiple alignment program PRANK.
 
 http://www.ebi.ac.uk/goldman-srv/prank/prank/
 
 Citations:
 
 Loytynoja, A. and Goldman, N. 2005. An algorithm for progressive multiple
-alignment of sequences with insertions. Proceedings of the National Academy of
-Sciences, 102: 10557--10562.
+alignment of sequences with insertions. Proceedings of the National Academy
+of Sciences, 102: 10557--10562.
 
 Loytynoja, A. and Goldman, N. 2008. Phylogeny-aware gap placement prevents
 errors in sequence alignment and evolutionary analysis. Science, 320: 1632.
 
 Last checked agains version: 081202
 """
-import os
 import types
 from Bio import Application
 from Bio.Application import _Option
@@ -38,11 +36,11 @@ class PrankCommandline(Application.AbstractCommandline):
             ################## input/output parameters: ##################
             #-d=sequence_file
             _Option(["-d", "d"], ["input", "file"],
-                    os.path.exists, 1, "Input filename"),
+                    None, 1, "Input filename"),
 
             #-t=tree_file [default: no tree, generate approximate NJ tree]
             _Option(["-t", "t"], ["input", "file"],
-                    os.path.exists, 0, "Input guide tree filename"),
+                    None, 0, "Input guide tree filename"),
             
             #-tree="tree_string" [tree in newick format; in double quotes]
             _Option(["-tree", "tree"], ["input"],
@@ -51,7 +49,7 @@ class PrankCommandline(Application.AbstractCommandline):
             
             #-m=model_file [default: HKY2/WAG]
             _Option(["-m", "m"], ["input"],
-                    os.path.exists, 0,
+                    None, 0,
                     "User-defined alignment model filename. Default: " + \
                     "HKY2/WAG"),
 
@@ -153,7 +151,7 @@ class PrankCommandline(Application.AbstractCommandline):
             #-codon [for DNA: use empirical codon model]
             #Assuming this is an input file as in -m
             _Option(["-codon", "codon"], ["input"],
-                    os.path.exists, 
+                    None, 
                     0,
                     "Codon model filename. Default: empirical codon model"),
 
