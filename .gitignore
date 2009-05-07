@@ -3,7 +3,7 @@ build
  
 #Ignore backup files from some Unix editors,
 *~
-.*.swp
+*.swp
 
 #Ignore these hidden files from Mac OS X
 .DS_Store
