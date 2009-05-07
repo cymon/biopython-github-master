@@ -302,3 +302,4 @@ class MafftCommandline(AbstractCommandline):
             _Argument(["input1"], ["input"], os.path.exists, 0,
                       "Second input file name for the mafft-profile command")
             ]
+        AbstractCommandline.__init__(self, cmd, **kwargs)
