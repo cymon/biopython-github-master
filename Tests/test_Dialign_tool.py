@@ -60,7 +60,7 @@ class DialignApplication(unittest.TestCase):
         """
         cmdline = DialignCommandline(dialign_exe)
         cmdline.set_parameter("input", self.infile1)
-        cmdline.set_parameter("-max_link")
+        cmdline.set_parameter("-max_link", True)
         cmdline.set_parameter("stars", 4)
         stdin, stdout, stderr = Application.generic_run(cmdline)
         
@@ -75,7 +75,7 @@ class DialignApplication(unittest.TestCase):
         """
         cmdline = DialignCommandline(dialign_exe)
         cmdline.set_parameter("input", self.infile1)
-        cmdline.set_parameter("-msf")
+        cmdline.set_parameter("-msf", True)
         stdin, stdout, stderr = Application.generic_run(cmdline)
         
         self.assert_(stdin.return_code == 0)
@@ -89,12 +89,12 @@ class DialignApplication(unittest.TestCase):
         """Round-trip through app with complex command line."""
         cmdline = DialignCommandline(dialign_exe)
         cmdline.set_parameter("input", self.infile1)
-        cmdline.set_parameter("-nt")
+        cmdline.set_parameter("-nt", True)
         cmdline.set_parameter("-thr", 4)
         cmdline.set_parameter("stars", 9)
-        cmdline.set_parameter("-ow")
-        cmdline.set_parameter("mask")
-        cmdline.set_parameter("-cs")
+        cmdline.set_parameter("-ow", True)
+        cmdline.set_parameter("mask", True)
+        cmdline.set_parameter("-cs", True)
 
         stdin, stdout, stderr = Application.generic_run(cmdline)
         
