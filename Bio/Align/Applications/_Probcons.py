@@ -24,7 +24,7 @@ class ProbconsCommandline(AbstractCommandline):
             #Note that some options cannot be assigned via properties using the
             #original documented option:
             #e.g cmdline.pre-training = 3 will not work
-            #In these cases the shorten option name should be used
+            #In these cases the shortened option name should be used
             #cmdline.pre = 3
             
             #-clustalw

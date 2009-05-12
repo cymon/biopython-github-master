@@ -30,7 +30,6 @@ class ProbconsApplication(unittest.TestCase):
     def setUp(self):
         self.infile1 = "Fasta/fa01"
         self.annotation_outfile = "Fasta/probcons_annot.out"
-        self.training_outfile = "Fasta/probcons_train.out"
 
     def tearDown(self):
         if os.path.isfile(self.annotation_outfile):
@@ -65,15 +64,13 @@ class ProbconsApplication(unittest.TestCase):
         self.assertEquals(stdin.return_code, 0)
         self.assertEquals(str(stdin._cl), probcons_exe + " -clustalw Fasta/fa01 ")
         self.assert_(stderr.read().strip().startswith("PROBCONS"))
-        self.assert_(stdout.read().strip().startswith("PROBCONS"))
-
-        #Currently AlignIO will not read clustal output because of the header
-        #align = AlignIO.read(StringIO(stdout.read()), "clustal")
-        #records = list(SeqIO.parse(open(self.infile1),"fasta"))
-        #self.assertEqual(len(records),len(align))
-        #for old, new in zip(records, align) :
-        #    self.assertEqual(old.id, new.id)
-        #    self.assertEqual(str(new.seq).replace("-",""), str(old.seq).replace("-",""))
+        #self.assert_(stdout.read().strip().startswith("PROBCONS"))
+        align = AlignIO.read(StringIO(stdout.read()), "clustal")
+        records = list(SeqIO.parse(open(self.infile1),"fasta"))
+        self.assertEqual(len(records),len(align))
+        for old, new in zip(records, align) :
+            self.assertEqual(old.id, new.id)
+            self.assertEqual(str(new.seq).replace("-",""), str(old.seq).replace("-",""))
 
     def test_Probcons_complex_commandline(self):
         """Round-trip through app with complex command line and output file
