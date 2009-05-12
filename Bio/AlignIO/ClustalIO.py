@@ -77,6 +77,7 @@ class ClustalWriter(SequentialAlignmentWriter) :
 
 class ClustalIterator(AlignmentIterator) :
     """Clustalw alignment iterator."""
+
     
     def next(self) :
 
@@ -91,9 +92,12 @@ class ClustalIterator(AlignmentIterator) :
             line = handle.readline()
         if not line:
             return None
-        if line[:7] != 'CLUSTAL':
-            raise ValueError("Did not find CLUSTAL header")
 
+        #Whitelisted headers we know about
+        known_headers = ['CLUSTAL', 'PROBCONS', 'MUSCLE']
+        if line.strip().split()[0] not in known_headers:
+            raise ValueError("Did not find known header %s" % \
+                                ", ".join(known_headers))
 
         # find the clustal version in the header line
         version = None
