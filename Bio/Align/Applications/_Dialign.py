@@ -4,7 +4,7 @@
 # as part of this package.
 
 """
-Bio.Application command line for the multiple alignment programme DIALIGN2-2
+Bio.Application command line for the multiple alignment program DIALIGN2-2.
 
 http://bibiserv.techfak.uni-bielefeld.de/dialign/welcome.html
 
@@ -169,4 +169,3 @@ class DialignCommandline(AbstractCommandline):
                       "Input file name. Must be FASTA format")
             ]
         AbstractCommandline.__init__(self, cmd, **kwargs)
-
