@@ -13,7 +13,6 @@ Probabilistic Consistency-based Multiple Sequence Alignment. Genome Research 15:
 
 Last checked agains version: 1.12
 """
-import types
 from Bio.Application import _Option, _Switch, _Argument, AbstractCommandline
 
 class ProbconsCommandline(AbstractCommandline):
