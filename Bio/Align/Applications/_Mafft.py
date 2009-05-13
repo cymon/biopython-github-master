@@ -211,7 +211,7 @@ class MafftCommandline(AbstractCommandline):
             #Transmembrane PAM number (Jones et al. 1994) matrix is used.
             #number>0. Default: BLOSUM62
             _Option(["--tm", "tm"], ["input"],
-                    os.path.exists, 0,
+                    None, 0,
                     "Transmembrane PAM number (Jones et al. 1994) " + \
                     "matrix is used. number>0. Default: BLOSUM62",
                     0),
@@ -219,7 +219,7 @@ class MafftCommandline(AbstractCommandline):
             #the same to that of BLAST. Ignored when nucleotide sequences are
             #input. Default: BLOSUM62
             _Option(["--aamatrix", "aamatrix"], ["input"],
-                    os.path.exists, 0,
+                    None, 0,
                     "Use a user-defined AA scoring matrix. " + \
                     "Default: BLOSUM62",
                     0),
@@ -258,48 +258,48 @@ class MafftCommandline(AbstractCommandline):
             # form: "mafft --seed align1 --seed align2 [etc] input"
             # Effectively for n number of seed alignments. Here we're going to
             # assume 6 extra are enough
-            _Option(["--seed", "seed"], ["input"], os.path.exists, 0,
+            _Option(["--seed", "seed"], ["input"], None, 0,
                     "Seed alignments given in alignment_n (fasta format) " + \
                     "are aligned with sequences in input.",
                     0),
             #SEED 1
-            _Option(["--seed", "seed1"], ["input"], os.path.exists, 0,
+            _Option(["--seed", "seed1"], ["input"], None, 0,
                     "Seed alignments given in alignment_n (fasta format) " + \
                     "are aligned with sequences in input.",
                     0),
             #SEED 2
-            _Option(["--seed", "seed2"], ["input"], os.path.exists, 0,
+            _Option(["--seed", "seed2"], ["input"], None, 0,
                     "Seed alignments given in alignment_n (fasta format) " + \
                     "are aligned with sequences in input.",
                     0),
             #SEED 3
-            _Option(["--seed", "seed3"], ["input"], os.path.exists, 0,
+            _Option(["--seed", "seed3"], ["input"], None, 0,
                     "Seed alignments given in alignment_n (fasta format) " + \
                     "are aligned with sequences in input.",
                     0),
             #SEED 4
-            _Option(["--seed", "seed4"], ["input"], os.path.exists, 0,
+            _Option(["--seed", "seed4"], ["input"], None, 0,
                     "Seed alignments given in alignment_n (fasta format) " + \
                     "are aligned with sequences in input.",
                      False),
             #SEED 5
-            _Option(["--seed", "seed5"], ["input"], os.path.exists, 0,
+            _Option(["--seed", "seed5"], ["input"], None, 0,
                     "Seed alignments given in alignment_n (fasta format) " + \
                     "are aligned with sequences in input.",
                     0),
             #SEED 6
-            _Option(["--seed", "seed6"], ["input"], os.path.exists, 0,
+            _Option(["--seed", "seed6"], ["input"], None, 0,
                     "Seed alignments given in alignment_n (fasta format) " + \
                     "are aligned with sequences in input.",
                     0),
             ####################### END SEEDS  ################################
             #The input (must be FASTA format)
-            _Argument(["input"], ["input"], os.path.exists, 1,
+            _Argument(["input"], ["input"], None, 1,
                       "Input file name"),
             ###################################################################
             #mafft-profile takes a second alignment input as an argument:
             #mafft-profile align1 align2
-            _Argument(["input1"], ["input"], os.path.exists, 0,
+            _Argument(["input1"], ["input"], None, 0,
                       "Second input file name for the mafft-profile command")
             ]
         AbstractCommandline.__init__(self, cmd, **kwargs)
