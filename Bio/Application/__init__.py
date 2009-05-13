@@ -167,9 +167,18 @@ class AbstractCommandline(object):
         be used to set the associated parameter.
         """
         self.program_name = cmd
-        parameters = self.parameters
+        try :
+            parameters = self.parameters
+        except AttributeError :
+            raise AttributeError("Subclass should have defined self.parameters")
         #Create properties for each parameter at run time
+        aliases = set()
         for p in parameters :
+            for name in p.names :
+                if name in aliases :
+                    raise ValueError("Parameter alias %s multiply defined" \
+                                     % name)
+                aliases.add(name)
             name = p.names[-1]
             #Beware of binding-versus-assignment confusion issues
             def getter(name) :
@@ -236,7 +245,10 @@ class AbstractCommandline(object):
         """Get a commandline option value."""
         for parameter in self.parameters:
             if name in parameter.names:
-                return parameter.value
+                if isinstance(parameter, _Switch) :
+                    return parameter.is_set
+                else :
+                    return parameter.value
         raise ValueError("Option name %s was not found." % name)
 
     def _clear_parameter(self, name) :
