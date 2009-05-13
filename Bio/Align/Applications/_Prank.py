@@ -107,20 +107,15 @@ class PrankCommandline(AbstractCommandline):
             _Option(["-codon", "codon"], ["input"],
                     None, 
                     0,
-                    "Codon model filename. Default: empirical codon model"),
-            #-termgap [penalise terminal gaps normally]
-            _Option(["-termgap", "termgap"], ["input"],
-                    lambda x: 0, #Does not take a value 
-                    0,
-                    "Penalise terminal gaps normally",
+                    "Codon model filename. Default: empirical codon model",
                     0),
+            #-termgap [penalise terminal gaps normally]
+            _Switch(["-termgap", "termgap"], ["input"],
+                    "Penalise terminal gaps normally"),
             ################ other parameters: ################################
             #-nopost [do not compute posterior support; default: compute]
-            _Option(["-nopost", "nopost"], ["input"],
-                    lambda x: 0, #Does not take a value 
-                    0,
-                    "Do not compute posterior support. Default: compute",
-                    0),
+            _Switch(["-nopost", "nopost"], ["input"],
+                    "Do not compute posterior support. Default: compute"),
             #-pwdist=# [expected pairwise distance for computing guidetree;
             #default: dna 0.25 / prot 0.5]
             _Option(["-pwdist", "pwdist"], ["input"],
