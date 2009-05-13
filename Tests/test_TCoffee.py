@@ -90,7 +90,7 @@ class ProbconsApplication(unittest.TestCase):
         cmdline.set_parameter("gapext", -5)
         cmdline.type = "protein"
         self.assertEqual(str(cmdline), t_coffee_exe + " -output clustalw_aln "
-                         "-infile Fasta/fa01 -outfile Fasta/tc_out.phy "
+                         "-infile Fasta/fa01 -outfile Fasta/tc_out.phy -type protein "
                          "-outorder input -gapopen -2 -gapext -5 ")
         stdin, stdout, stderr = Application.generic_run(cmdline)
         self.assertEquals(stdin.return_code, 0)
