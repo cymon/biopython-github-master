@@ -20,8 +20,6 @@ class TCoffeeCommandline(AbstractCommandline):
     
     Implements a VERY limited number of options.
     """
-    SEQ_TYPES = ["dna","protein","dna_protein"]
-
     def __init__(self, cmd="t_coffee", **kwargs):
         self.parameters = \
           [_Option(["-output", "output"], ["output"],
@@ -47,8 +45,8 @@ class TCoffeeCommandline(AbstractCommandline):
                     0),
            _Switch(["-convert", "convert"], ["input"],
                     "Specify you want to perform a file conversion"),
-           _Option(["-type"], ["input"],
-                    lambda x: x in SEQ_TYPES,
+           _Option(["-type", "type"], ["input"],
+                    lambda x: x in ["dna","protein","dna_protein"],
                     0,
                     "Specify the type of sequence being aligned",
                     0),
