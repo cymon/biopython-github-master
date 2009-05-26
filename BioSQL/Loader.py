@@ -47,6 +47,7 @@ class DatabaseLoader:
     def load_seqrecord(self, record):
         """Load a Biopython SeqRecord into the database.
         """
+        print "here in load_ser"
         bioentry_id = self._load_bioentry_table(record)
         self._load_bioentry_date(record, bioentry_id)
         self._load_biosequence(record, bioentry_id)
@@ -547,6 +548,7 @@ class DatabaseLoader:
          %s)"""
         #print self.dbid, taxon_id, record.name, accession, identifier, \
         #        division, description, version
+        print "trying insert...",
         self.adaptor.execute(sql, (self.dbid,
                                    taxon_id,
                                    record.name, 
@@ -555,8 +557,11 @@ class DatabaseLoader:
                                    division,
                                    description,
                                    version))
+        print "done."
         # now retrieve the id for the bioentry
+        print "trying to retrieve las id...",
         bioentry_id = self.adaptor.last_id('bioentry')
+        print "done."
 
         return bioentry_id
 

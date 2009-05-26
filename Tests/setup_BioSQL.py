@@ -16,12 +16,12 @@ from BioSQL import BioSeqDatabase
 #DBDRIVER = 'MySQLdb'
 #DBTYPE = 'mysql'
 # -- PostgreSQL
-#DBDRIVER = 'psycopg'
-#DBTYPE = 'pg'
+DBDRIVER = 'psycopg2'
+DBTYPE = 'pg'
 
 # Constants for the database driver
 DBHOST = 'localhost'
-DBUSER = 'root'
+DBUSER = 'cymon'
 DBPASSWD = ''
 TESTDB = 'biosql_test'
 

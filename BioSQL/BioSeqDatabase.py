@@ -69,8 +69,9 @@ def open_database(driver = "MySQLdb", **kwargs):
         
         dsn = ' '.join(['='.join(i) for i in kw.items()])
         conn = connect(dsn)
-    
-    return DBServer(conn, module)
+
+    db = DBServer(conn, module)
+    return db
 
 class DBServer:
     def __init__(self, conn, module, module_name=None):
@@ -163,6 +164,7 @@ class Adaptor:
         self.conn = conn
         self.cursor = conn.cursor()
         self.dbutils = dbutils
+        
 
     def last_id(self, table):
         return self.dbutils.last_id(self.cursor, table)
@@ -330,6 +332,14 @@ class BioSeqDatabase:
         self.adaptor = adaptor
         self.name = name
         self.dbid = self.adaptor.fetch_dbid_by_dbname(name)
+
+        ##Test for presence of RULES in schema
+        self.postgres_rules_present= False
+        if "psycopg" in self.adaptor.conn.__class__.__module__:
+            sql = r"SELECT ev_class FROM pg_rewrite WHERE rulename='rule_bioentry_i1'"
+            if self.adaptor.execute_and_fetchall(sql):
+                self.postgres_rules_present = True
+
     def __repr__(self):
         return "BioSeqDatabase(%r, %r)" % (self.adaptor, self.name)
         
@@ -439,5 +449,14 @@ class BioSeqDatabase:
         num_records = 0
         for cur_record in record_iterator :
             num_records += 1
+            if self.postgres_rules_present:
+                self.adaptor.execute("SELECT count(bioentry_id) FROM bioentry")
+                curr_val = self.adaptor.cursor.fetchone()[0]
             db_loader.load_seqrecord(cur_record)
+            if self.postgres_rules_present:
+                self.adaptor.execute("SELECT count(bioentry_id) FROM bioentry")
+                after_val = self.adaptor.cursor.fetchone()[0]
+                if curr_val == after_val:
+                    raise self.adaptor.conn.IntegrityError("Duplicate record " 
+                        "detected: record has not been inserted")
         return num_records
