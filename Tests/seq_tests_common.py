@@ -40,10 +40,17 @@ def compare_references(old_r, new_r) :
     #allow us to store a consortium.
     assert new_r.consrtm == ""
     
-    #TODO - reference location?
-    #The parser seems to give a location object (i.e. which
-    #nucleotides from the file is the reference for), while the
-    #we seem to use the database to hold the journal details (!)
+    # Reference location
+    if old_r.location == []:
+        assert new_r.location == [], "old_r.location %s != " \
+            "new_r.location %s" % (old_r.location, new_r.location)
+    else:
+        assert old_r.location[0].start == new_r.location[0].start, \
+        "old_r.location[0].start %s != new_r.location[0].start %s" % \
+        (old_r.location[0].start, new_r.location[0].start)
+        assert old_r.location[0].end == new_r.location[0].end, \
+        "old_r.location[0].end %s != new_r.location[0].end %s" % \
+        (old_r.location[0].end, new_r.location[0].end)
     return True
 
 def compare_features(old_f, new_f) :
@@ -258,18 +265,6 @@ def compare_records(old, new) :
             assert len(old.annotations[key]) == len(new.annotations[key])
             for old_ref, new_ref in zip(old.annotations[key], new.annotations[key]) :
                 compare_references(old_ref, new_ref)
-            for old_ref, new_ref in zip(old.annotations[key], new.annotations[key]) :
-                if old_ref.location == []:
-                    assert new_ref.location == [], "old_reference.location %s !=" \
-                        "new_reference location %s" % (old_ref.location,
-                        new_ref.location)
-                else:
-                    assert old_ref.location[0].start == new_ref.location[0].start, \
-                    "old ref.location[0].start %s != new ref.location[0].start %s" % \
-                    (old_ref.location[0].start, new_ref.location[0].start)
-                    assert old_ref.location[0].end == new_ref.location[0].end, \
-                    "old ref.location[0].end %s != new ref.location[0].end %s" % \
-                    (old_ref.location[0].end, new_ref.location[0].end)
         elif key == "comment":
             if isinstance(old.annotations[key], list):
                 old_comment = [comm.replace("\n", " ") for comm in \
