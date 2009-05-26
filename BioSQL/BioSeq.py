@@ -351,8 +351,11 @@ def _retrieve_reference(adaptor, primary_id):
     references = []
     for start, end, location, title, authors, dbname, accession in refs:
         reference = SeqFeature.Reference()
-        if start: start -= 1
-        reference.location = [SeqFeature.FeatureLocation(start, end)]
+        if start:
+            start -= 1
+            reference.location = [SeqFeature.FeatureLocation(start, end)]
+        else:
+            reference.location = []
         #Don't replace the default "" with None.
         if authors : reference.authors = authors
         if title : reference.title = title
