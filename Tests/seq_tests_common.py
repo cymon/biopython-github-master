@@ -256,8 +256,20 @@ def compare_records(old, new) :
     for key in set(old.annotations.keys()).intersection(new.annotations.keys()) :
         if key == "references" :
             assert len(old.annotations[key]) == len(new.annotations[key])
-            for old_r, new_r in zip(old.annotations[key], new.annotations[key]) :
-                compare_references(old_r, new_r)
+            for old_ref, new_ref in zip(old.annotations[key], new.annotations[key]) :
+                compare_references(old_ref, new_ref)
+            for old_ref, new_ref in zip(old.annotations[key], new.annotations[key]) :
+                if old_ref.location == []:
+                    assert new_ref.location == [], "old_reference.location %s !=" \
+                        "new_reference location %s" % (old_ref.location,
+                        new_ref.location)
+                else:
+                    assert old_ref.location[0].start == new_ref.location[0].start, \
+                    "old ref.location[0].start %s != new ref.location[0].start %s" % \
+                    (old_ref.location[0].start, new_ref.location[0].start)
+                    assert old_ref.location[0].end == new_ref.location[0].end, \
+                    "old ref.location[0].end %s != new ref.location[0].end %s" % \
+                    (old_ref.location[0].end, new_ref.location[0].end)
         elif key == "comment":
             if isinstance(old.annotations[key], list):
                 old_comment = [comm.replace("\n", " ") for comm in \
