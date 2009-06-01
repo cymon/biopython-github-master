@@ -464,9 +464,15 @@ class InDepthLoadTest(unittest.TestCase):
         self.assertEqual(db_record.name, record.name)
         self.assertEqual(db_record.description, record.description)
         self.assertEqual(str(db_record.seq), str(record.seq))
+        
+        #We have to manually advance the sequence because when the repeat load
+        #of the record fails and returns INSERT 0,0 because of the RULES the call
+        #to get the last_id causes an OperationalError because the curr_val hasnt
+        #been defined for the session ie. next_val() hasnt been called
+        self.db.adaptor.execute(r"select nextval('bioentry_pk_seq')")
+
         #Good... now try reloading it!
         try :
-            print "trying to insert record... %s " % record
             count = self.db.load([record])
         except Exception, err :
             #Good!

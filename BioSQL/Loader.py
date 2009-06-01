@@ -525,7 +525,7 @@ class DatabaseLoader:
         #Allow description and division to default to NULL as in BioPerl.
         description = getattr(record, 'description', None)
         division = record.annotations.get("data_file_division", None)
-        
+
         sql = """
         INSERT INTO bioentry (
          biodatabase_id,
