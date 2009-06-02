@@ -1,6 +1,6 @@
 # Copyright 2002 by Andrew Dalke.  All rights reserved.
-# Revisions 2007-2008 copyright by Peter Cock.  All rights reserved.
-# Revisions 2008 copyright by Cymon J. Cox.  All rights reserved.
+# Revisions 2007-2009 copyright by Peter Cock.  All rights reserved.
+# Revisions 2008-2009 copyright by Cymon J. Cox.  All rights reserved.
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
@@ -10,12 +10,15 @@
 """Implementations of Biopython-like Seq objects on top of BioSQL.
 
 This allows retrival of items stored in a BioSQL database using
-a biopython-like Seq interface.
+a biopython-like SeqRecord and Seq interface.
+
+Note: Currently we do not support recording per-letter-annotations
+(like quality scores) in BioSQL.
 """
 
 from Bio import Alphabet
 from Bio.Seq import Seq, UnknownSeq
-from Bio.SeqRecord import SeqRecord
+from Bio.SeqRecord import SeqRecord, _RestrictedDict
 from Bio import SeqFeature
 
 class DBSeq(Seq):  # This implements the biopython Seq interface
@@ -351,8 +354,10 @@ def _retrieve_reference(adaptor, primary_id):
     references = []
     for start, end, location, title, authors, dbname, accession in refs:
         reference = SeqFeature.Reference()
-        if start: start -= 1
-        reference.location = [SeqFeature.FeatureLocation(start, end)]
+        #If the start/end are missing, reference.location is an empty list
+        if (start is not None) or (end is not None) :
+            if start is not None: start -= 1 #python counting
+            reference.location = [SeqFeature.FeatureLocation(start, end)]
         #Don't replace the default "" with None.
         if authors : reference.authors = authors
         if title : reference.title = title
@@ -448,6 +453,15 @@ class DBSeqRecord(SeqRecord):
             self.id = "%s.%s" % (accession, version)
         else:
             self.id = accession
+        #We don't yet record any per-letter-annotations in the
+        #BioSQL database, but we should set this property up
+        #for completeness (and the __str__ method).
+        try :
+            length = len(self.seq)
+        except :
+            #Could be no sequence in the database!
+            length = 0
+        self._per_letter_annotations = _RestrictedDict(length=length)
 
     def __get_seq(self):
         if not hasattr(self, "_seq"):

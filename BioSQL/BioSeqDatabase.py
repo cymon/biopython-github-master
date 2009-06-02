@@ -450,13 +450,10 @@ class BioSeqDatabase:
         for cur_record in record_iterator :
             num_records += 1
             if self.postgres_rules_present:
-                self.adaptor.execute("SELECT count(bioentry_id) FROM bioentry")
-                curr_val = self.adaptor.cursor.fetchone()[0]
-            db_loader.load_seqrecord(cur_record)
-            if self.postgres_rules_present:
-                self.adaptor.execute("SELECT count(bioentry_id) FROM bioentry")
-                after_val = self.adaptor.cursor.fetchone()[0]
-                if curr_val == after_val:
+                self.adaptor.execute("SELECT bioentry_id FROM bioentry "
+                                     "WHERE identifier = '%s'" % cur_record.id)
+                if self.adaptor.cursor.fetchone():
                     raise self.adaptor.conn.IntegrityError("Duplicate record " 
                         "detected: record has not been inserted")
+            db_loader.load_seqrecord(cur_record)
         return num_records
