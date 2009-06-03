@@ -334,11 +334,12 @@ class BioSeqDatabase:
         self.dbid = self.adaptor.fetch_dbid_by_dbname(name)
 
         ##Test for presence of RULES in schema
-        self.postgres_rules_present= False
+        self._postgres_rules_present= False
         if "psycopg" in self.adaptor.conn.__class__.__module__:
-            sql = r"SELECT ev_class FROM pg_rewrite WHERE rulename='rule_bioentry_i1'"
+            sql = r"SELECT ev_class FROM pg_rewrite WHERE " + \
+            "(rulename='rule_bioentry_i1') OR (rulename='rule_bioentry_i1')"
             if self.adaptor.execute_and_fetchall(sql):
-                self.postgres_rules_present = True
+                self._postgres_rules_present = True
 
     def __repr__(self):
         return "BioSeqDatabase(%r, %r)" % (self.adaptor, self.name)
@@ -449,14 +450,24 @@ class BioSeqDatabase:
         num_records = 0
         for cur_record in record_iterator :
             num_records += 1
-            if self.postgres_rules_present:
-                acc, vers = cur_record.id.split(".")
+            #If using PostgreSQL and the RULES are present
+            #check for a duplicate record before loading
+            if self._postgres_rules_present:
+                if cur_record.id.count(".") == 1:
+                    accession, version = cur_record.id.split('.')
+                    try :
+                        version = int(version)
+                    except ValueError :
+                        accession = cur_record.id
+                        version = 0
+                else:
+                    accession = cur_record.id
+                    version = 0
+                gi = cur_record.annotations.get("gi", None)
                 self.adaptor.execute("SELECT bioentry_id FROM bioentry WHERE "
                 "(identifier = '%s' AND biodatabase_id = '%s') OR (accession = "
                 "'%s' AND version = '%s' AND biodatabase_id = '%s')" % \
-                (cur_record.annotations["gi"], self.dbid, acc, vers)
-                self.adaptor.execute("SELECT bioentry_id FROM bioentry "
-                                     "WHERE identifier = '%s'" % cur_record.id)
+                (gi, self.dbid, accession, version, self.dbid))
                 if self.adaptor.cursor.fetchone():
                     raise self.adaptor.conn.IntegrityError("Duplicate record " 
                         "detected: record has not been inserted")

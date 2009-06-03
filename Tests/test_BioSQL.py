@@ -398,6 +398,9 @@ class ClosedLoopTest(unittest.TestCase):
     """Test file -> BioSQL -> file."""
     #NOTE - For speed I don't bother to create a new database each time,
     #simple a new unique namespace is used for each test.
+
+    def setUp(self):
+        create_database()
     
     def test_NC_005816(self) :
         """GenBank file to BioSQL and back to a GenBank file, NC_005816."""
@@ -432,6 +435,7 @@ class ClosedLoopTest(unittest.TestCase):
         self.loop(os.path.join(os.getcwd(), "GenBank", "arab1.gb"), "gb")
 
     def loop(self, filename, format):
+        #create_database()
         original_records = list(SeqIO.parse(open(filename, "rU"), format))
         # now open a connection to load the database
         server = BioSeqDatabase.open_database(driver = DBDRIVER,
