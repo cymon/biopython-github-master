@@ -70,8 +70,7 @@ def open_database(driver = "MySQLdb", **kwargs):
         dsn = ' '.join(['='.join(i) for i in kw.items()])
         conn = connect(dsn)
 
-    db = DBServer(conn, module)
-    return db
+    return DBServer(conn, module)
 
 class DBServer:
     def __init__(self, conn, module, module_name=None):
@@ -164,7 +163,6 @@ class Adaptor:
         self.conn = conn
         self.cursor = conn.cursor()
         self.dbutils = dbutils
-        
 
     def last_id(self, table):
         return self.dbutils.last_id(self.cursor, table)
