@@ -450,6 +450,11 @@ class BioSeqDatabase:
         for cur_record in record_iterator :
             num_records += 1
             if self.postgres_rules_present:
+                acc, vers = cur_record.id.split(".")
+                self.adaptor.execute("SELECT bioentry_id FROM bioentry WHERE "
+                "(identifier = '%s' AND biodatabase_id = '%s') OR (accession = "
+                "'%s' AND version = '%s' AND biodatabase_id = '%s')" % \
+                (cur_record.annotations["gi"], self.dbid, acc, vers)
                 self.adaptor.execute("SELECT bioentry_id FROM bioentry "
                                      "WHERE identifier = '%s'" % cur_record.id)
                 if self.adaptor.cursor.fetchone():

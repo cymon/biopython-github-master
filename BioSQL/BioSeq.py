@@ -240,6 +240,13 @@ def _retrieve_features(adaptor, primary_id):
                 start -= 1
             if strand == 0:
                 strand = None
+            if strand not in (+1, -1, None) :
+                raise ValueError("Invalid strand %s found in database for " \
+                                 "seqfeature_id %s" % (strand, seqfeature_id))
+            if end < start :
+                import warnings
+                warnings.warn("Inverted location start/end (%i and %i) for " \
+                              "seqfeature_id %s" % (start, end, seqfeature_id))
             locations.append( (location_id, start, end, strand) )
         # Get possible remote reference information
         remote_results = adaptor.execute_and_fetchall(
@@ -302,7 +309,14 @@ def _retrieve_features(adaptor, primary_id):
             start = locations[0][1]
             end = locations[-1][2]
             feature.location = SeqFeature.FeatureLocation(start, end)
-            feature.strand = feature.sub_features[0].strand
+            # To get the parent strand (as done when parsing GenBank files),
+            # need to consider evil mixed strand examples like this,
+            # join(complement(69611..69724),139856..140087,140625..140650)
+            strands = set(sf.strand for sf in feature.sub_features)
+            if len(strands)==1 :
+                feature.strand = feature.sub_features[0].strand
+            else :
+                feature.strand = None # i.e. mixed strands
 
         seq_feature_list.append(feature)
 
