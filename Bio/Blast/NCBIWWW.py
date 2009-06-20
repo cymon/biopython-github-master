@@ -807,6 +807,8 @@ def qblast(program, database, sequence,
         results = handle.read()
         # XML results don't have the Status tag when finished
         if results.find("Status=") < 0:
+            if results == "\n\n":
+                continue
             break
         i = results.index("Status=")
         j = results.index("\n", i)
