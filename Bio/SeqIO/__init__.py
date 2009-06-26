@@ -275,6 +275,7 @@ _FormatToWriter ={"fasta" : FastaIO.FastaWriter,
                   "fastq-solexa" : QualityIO.FastqSolexaWriter,
                   "fastq-illumina" : QualityIO.FastqSolexaWriter,
                   "qual" : QualityIO.QualPhredWriter,
+                  "phd" : PhdIO.PhdWriter,
                   }
 
 def write(sequences, handle, format) :

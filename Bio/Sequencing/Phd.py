@@ -25,12 +25,9 @@ class Record:
     def __init__(self):
         self.file_name = ''
         self.comments={}
-        for kw in CKEYWORDS:
-            self.comments[kw.lower()]=None
         self.sites = []
         self.seq = ''
         self.seq_trimmed = ''
-
 
 def read(handle):
     """Reads the next PHD record from the file, returning it as a Record object.
@@ -103,7 +100,7 @@ def read(handle):
         raise ValueError("Failed to find END_SEQUENCE line")
 
     record.seq = Seq.Seq(''.join([n[0] for n in record.sites]), generic_dna)
-    if record.comments['trim'] is not None:
+    if record.comments.has_key('trim'):
         first, last = record.comments['trim'][:2]
         record.seq_trimmed = record.seq[first:last]
 
