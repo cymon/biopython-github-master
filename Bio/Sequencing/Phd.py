@@ -25,9 +25,12 @@ class Record:
     def __init__(self):
         self.file_name = ''
         self.comments={}
+        for kw in CKEYWORDS:
+            self.comments[kw.lower()]=None
         self.sites = []
         self.seq = ''
         self.seq_trimmed = ''
+
 
 def read(handle):
     """Reads the next PHD record from the file, returning it as a Record object.
@@ -71,7 +74,14 @@ def read(handle):
                          'quality_levels',
                          'trace_array_min_index',
                          'trace_array_max_index'):
-            record.comments[keyword] = int(value)
+            try:
+                record.comments[keyword] = int(value)
+            except ValueError, e:
+                # Following BioPerl defaults trace_array_max_index could be unknown
+                if value == "unknown":
+                    record.comments[keyword] = value
+                else:
+                    raise ValueError, e
         elif keyword=='trace_peak_area_ratio':
             record.comments[keyword] = float(value)
         elif keyword=='trim':
@@ -100,7 +110,7 @@ def read(handle):
         raise ValueError("Failed to find END_SEQUENCE line")
 
     record.seq = Seq.Seq(''.join([n[0] for n in record.sites]), generic_dna)
-    if record.comments.has_key('trim'):
+    if record.comments['trim'] is not None:
         first, last = record.comments['trim'][:2]
         record.seq_trimmed = record.seq[first:last]
 
