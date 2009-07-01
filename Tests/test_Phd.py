@@ -3,7 +3,6 @@ import unittest
 
 from Bio.Sequencing import Phd
 from Bio import SeqIO
-from Bio.SeqIO.PhdIO import ANNOTATION_DEFAULTS
 
 class PhdTestOne(unittest.TestCase):
     def setUp(self):
@@ -174,6 +173,9 @@ class PhdTestOne(unittest.TestCase):
         self.assertRaises(StopIteration, records.next)
 
 class PhdTestTwo(unittest.TestCase):
+    """phd1 is an ABI PHD file with 3 records, but no version number on the
+    BEGIN_SEQUENCE line"""
+
     def setUp(self):
         handle1 = open("Phd/phd1", "r")
         self.records = list(SeqIO.parse(handle1, "phd"))
@@ -190,10 +192,12 @@ class PhdTestTwo(unittest.TestCase):
         os.remove(self.temp_filename)
 
     def test_check_record_writer(self):
-        """Check that written records when parsed are sane
+        """Read and write phd1 - ABI PHD 3 records
         """
         for i, record in enumerate(self.records):
             self.assertEqual(record.name, self.new_records[i].name)
+            self.assertEqual(len(record.annotations),
+                             len(self.new_records[i].annotations))
             for annot in record.annotations:
                 self.assertEqual(record.annotations[annot], 
                             self.new_records[i].annotations[annot])
@@ -205,15 +209,48 @@ class PhdTestTwo(unittest.TestCase):
                         self.new_records[i].letter_annotations['peak_location'][j])
 
 class PhdTestThree(unittest.TestCase):
-    """The phd file Phd/Phd1_no_comments has no annotations in the COMMENTS
-    block. By default, some of these should be written with default values.
-    """
+    """phd2 is an ABI PHD file with 1 records, but no version number on the
+    BEGIN_SEQUENCE line"""
 
     def setUp(self):
-        handle1 = open("Phd/phd1_no_comments", "rU")
+        handle1 = open("Phd/phd2", "r")
         self.records = list(SeqIO.parse(handle1, "phd"))
         handle1.close()
-        self.temp_filename = "Phd/phd_temp_no_comments"
+        self.temp_filename = "Phd/phd_temp"
+        handle2 = open(self.temp_filename, "w")
+        SeqIO.write(self.records, handle2, "phd")
+        handle2.close()
+        handle3 = open(self.temp_filename, "r")
+        self.new_records = list(SeqIO.parse(handle3, "phd"))
+        handle3.close()
+
+    def tearDown(self):
+        os.remove(self.temp_filename)
+
+    def test_check_record_writer(self):
+        """Read and write phd2 - ABI PHD single record
+        """
+        for i, record in enumerate(self.records):
+            self.assertEqual(record.name, self.new_records[i].name)
+            self.assertEqual(len(record.annotations),
+                             len(self.new_records[i].annotations))
+            for annot in record.annotations:
+                self.assertEqual(record.annotations[annot], 
+                            self.new_records[i].annotations[annot])
+            for j, site in enumerate(record.seq):
+                self.assertEqual(record.seq[j], self.new_records[i].seq[j])
+                self.assertEqual(record.letter_annotations['phred_quality'][j],
+                        self.new_records[i].letter_annotations['phred_quality'][j])
+                self.assertEqual(record.letter_annotations['peak_location'][j],
+                        self.new_records[i].letter_annotations['peak_location'][j])
+
+class PhdTestFour(unittest.TestCase):
+    """The phd file Phd/phd_solexa - no peak_locations, with version numbers"""
+    def setUp(self):
+        handle1 = open("Phd/phd_solexa", "rU")
+        self.records = list(SeqIO.parse(handle1, "phd"))
+        handle1.close()
+        self.temp_filename = "Phd/phd_temp_solexa"
         handle2 = open(self.temp_filename, "w")
         SeqIO.write(self.records, handle2, "phd")
         handle2.close()
@@ -225,18 +262,53 @@ class PhdTestThree(unittest.TestCase):
         os.remove(self.temp_filename)
 
     def test_check_annotation_default_values(self):
-        """Check that annotation defaults are written"""
+        """Read and write phd_solexa - Solexa style phd with 2 records"""
         for i, record in enumerate(self.records):
+            self.assertEqual(record.name, self.new_records[i].name)
+            self.assertEqual(len(record.annotations),
+                             len(self.new_records[i].annotations))
             for annot in record.annotations:
-                if annot in ["trim", "trace_peak_area_ratio", "chromat_file",
-                             "time"]:
-                    # No default values
-                    continue
-                if ANNOTATION_DEFAULTS[annot] or ANNOTATION_DEFAULTS[annot] == 0:
-                    self.assertEqual(ANNOTATION_DEFAULTS[annot], 
-                        self.new_records[i].annotations[annot])
-                else:
-                    self.fail("Unknown annotation: %s" % annot)
+                self.assertEqual(record.annotations[annot], 
+                            self.new_records[i].annotations[annot])
+            for j, site in enumerate(record.seq):
+                self.assertEqual(record.seq[j], self.new_records[i].seq[j])
+                self.assertEqual(record.letter_annotations['phred_quality'][j],
+                        self.new_records[i].letter_annotations['phred_quality'][j])
+            self.assertRaises(KeyError, record.letter_annotations.__getitem__, 'peak_location')
+
+class PhdTestFive(unittest.TestCase):
+    """The phd file Phd/phd_454 - has peak_locations and version numbers"""
+    def setUp(self):
+        handle1 = open("Phd/phd_454", "rU")
+        self.records = list(SeqIO.parse(handle1, "phd"))
+        handle1.close()
+        self.temp_filename = "Phd/phd_temp_454"
+        handle2 = open(self.temp_filename, "w")
+        SeqIO.write(self.records, handle2, "phd")
+        handle2.close()
+        handle3 = open(self.temp_filename, "rU")
+        self.new_records = list(SeqIO.parse(handle3, "phd"))
+        handle3.close()
+
+    def tearDown(self):
+        os.remove(self.temp_filename)
+
+    def test_check_annotation_default_values(self):
+        """Read and write phd_454 - 454 style phd with 2 records"""
+        for i, record in enumerate(self.records):
+            self.assertEqual(record.name, self.new_records[i].name)
+            self.assertEqual(len(record.annotations),
+                             len(self.new_records[i].annotations))
+            for annot in record.annotations:
+                self.assertEqual(record.annotations[annot], 
+                            self.new_records[i].annotations[annot])
+            for j, site in enumerate(record.seq):
+                self.assertEqual(record.seq[j], self.new_records[i].seq[j])
+                self.assertEqual(record.letter_annotations['phred_quality'][j],
+                        self.new_records[i].letter_annotations['phred_quality'][j])
+                self.assertEqual(record.letter_annotations['peak_location'][j],
+                        self.new_records[i].letter_annotations['peak_location'][j])
+
 
 if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity = 2)

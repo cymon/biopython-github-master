@@ -24,13 +24,12 @@ class Record:
     """Hold information from a PHD file."""
     def __init__(self):
         self.file_name = ''
-        self.comments={}
+        self.comments = {}
         for kw in CKEYWORDS:
-            self.comments[kw.lower()]=None
+            self.comments[kw.lower()] = None
         self.sites = []
         self.seq = ''
         self.seq_trimmed = ''
-
 
 def read(handle):
     """Reads the next PHD record from the file, returning it as a Record object.
@@ -74,14 +73,7 @@ def read(handle):
                          'quality_levels',
                          'trace_array_min_index',
                          'trace_array_max_index'):
-            try:
-                record.comments[keyword] = int(value)
-            except ValueError, e:
-                # Following BioPerl defaults trace_array_max_index could be unknown
-                if value == "unknown":
-                    record.comments[keyword] = value
-                else:
-                    raise ValueError, e
+            record.comments[keyword] = int(value)
         elif keyword=='trace_peak_area_ratio':
             record.comments[keyword] = float(value)
         elif keyword=='trim':
@@ -100,8 +92,16 @@ def read(handle):
         if line.startswith('END_DNA'):
             break
         else:
-            base, quality, location = line.split()
-            record.sites.append((base, quality, location))
+            # Line is: "site quality peak_location"
+            # Peak location is optional
+            bits = line.split()
+            if len(bits) == 3:
+                record.sites.append((bits[0], bits[1], bits[2]))
+            elif len(bits) == 2:
+                record.sites.append((bits[0], bits[1]))
+            else:
+                raise ValueError("DNA line must contain at least a base and "
+                                "quality score")
 
     for line in handle:
         if line.startswith("END_SEQUENCE"):
