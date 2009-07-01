@@ -74,7 +74,7 @@ class PhdWriter(SequentialSequenceWriter):
             if value or value == 0:
                 self.handle.write("%s: %s\n" % (annot.upper(), value))
 
-        self.handle.write("\nEND_COMMENT\nBEGIN_DNA\n")
+        self.handle.write("END_COMMENT\nBEGIN_DNA\n")
         for i, site in enumerate(record.seq):
             if peak_locations:
                 self.handle.write("%s %i %i\n" % (
