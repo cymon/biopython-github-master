@@ -1,4 +1,5 @@
-# Copyright 2008 by Peter Cock.  All rights reserved.
+# Copyright 2008-2009 by Peter Cock.  All rights reserved.
+# Revisions copyright 2009 by Cymon J. Cox.  All rights reserved.
 #
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
@@ -22,7 +23,6 @@ def PhdIterator(handle) :
 
     This uses the Bio.Sequencing.Phd module to do the hard work.
     """
-
     phd_records = Phd.parse(handle)
     for phd_record in phd_records:
         #Convert the PHY record into a SeqRecord...
