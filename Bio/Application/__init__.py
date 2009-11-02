@@ -4,7 +4,16 @@
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
-"""General mechanisms to access applications in biopython.
+"""General mechanisms to access applications in Biopython.
+
+This module is not intended for direct use (any more). It provides
+the basic objects for our command line wrappers such as:
+
+ - Bio.Align.Applications
+ - Bio.Blast.Applications
+ - Bio.Emboss.Applications
+ - Bio.Sequencing.Applications
+
 """
 import os, sys
 import StringIO
@@ -13,7 +22,7 @@ import subprocess
 from Bio import File
 
 def generic_run(commandline):
-    """Run an application with the given commandline.
+    """Run an application with the given commandline (DEPRECATED).
 
     This expects a pre-built commandline that derives from 
     AbstractCommandline, and returns a ApplicationResult object
@@ -23,7 +32,19 @@ def generic_run(commandline):
     WARNING - This will read in the full program output into memory!
     This may be in issue when the program writes a large amount of
     data to standard output.
+
+    NOTE - This function is considered to be obsolete, and we intend to
+    deprecate it and then remove it in future releases of Biopython.
+    We now recommend you invoke subprocess directly, using str(commandline)
+    to turn an AbstractCommandline wrapper into a command line string. This
+    will give you full control of the tool's input and output as well.
     """
+    import warnings
+    warnings.warn("Bio.Application.generic_run and the associated "
+                  "Bio.Application.ApplicationResult are deprecated. "
+                  "Please use the built in Python module subprocess "
+                  "instead, as described in the Biopython Tutorial.",
+                  DeprecationWarning)
     #We don't need to supply any piped input, but we setup the
     #standard input pipe anyway as a work around for a python
     #bug if this is called from a Windows GUI program.  For
@@ -42,14 +63,23 @@ def generic_run(commandline):
            File.UndoHandle(StringIO.StringIO(e_out))
 
 class ApplicationResult:
-    """Make results of a program available through a standard interface.
+    """Make results of a program available through a standard interface (DEPRECATED).
     
     This tries to pick up output information available from the program
     and make it available programmatically.
+
+    NOTE - This obsolete is considered to be obsolete, and we intend to
+    deprecate it and then remove it in future releases of Biopython.
     """
     def __init__(self, application_cl, return_code):
         """Intialize with the commandline from the program.
         """
+        import warnings
+        warnings.warn("Bio.Application.ApplicationResult and the "
+                      "associated function Bio.Application.generic_run "
+                      "are deprecated. Please use the built in Python "
+                      "module subprocess instead, as described in the "
+                      "Biopython Tutorial", DeprecationWarning)
         self._cl = application_cl
 
         # provide the return code of the application
@@ -127,7 +157,7 @@ class AbstractCommandline(object):
     ValueError: You must either set outfile (output filename), or enable filter or stdout (output to stdout).
 
     In this case the wrapper knows certain arguments are required to construct
-    a valid command line for the tool.  For complete example,
+    a valid command line for the tool.  For a complete example,
 
     >>> from Bio.Emboss.Applications import WaterCommandline
     >>> cline = WaterCommandline(gapopen=10, gapextend=0.5)
@@ -139,9 +169,8 @@ class AbstractCommandline(object):
     >>> cline
     WaterCommandline(cmd='water', outfile='temp_water.txt', asequence='asis:ACCCGGGCGCGGT', bsequence='asis:ACCCGAGCGCGGT', gapopen=10, gapextend=0.5)
 
-    You would typically run the command line via a standard python operating
-    system call (e.g. using the subprocess module).  Bio.Application includes
-    a simple wrapper function generic_run which may be suitable.
+    You would typically run the command line via a standard Python operating
+    system call (e.g. using the subprocess module).
     """
     def __init__(self, cmd, **kwargs):
         """Create a new instance of a command line wrapper object."""
@@ -156,7 +185,7 @@ class AbstractCommandline(object):
         # i.e. There should have an optional argument "cmd" to set the location
         # of the executable (with a sensible default which should work if the
         # command is on the path on Unix), and keyword arguments.  It should
-        # then define a list of parameters, all objects derevied from the base
+        # then define a list of parameters, all objects derived from the base
         # class _AbstractParameter.
         # 
         # The keyword arguments should be any valid parameter name, and will
@@ -195,6 +224,21 @@ class AbstractCommandline(object):
         for key, value in kwargs.iteritems() :
             self.set_parameter(key, value)
     
+    def _validate(self):
+        """Make sure the required parameters have been set (PRIVATE).
+
+        No return value - it either works or raises a ValueError.
+
+        This is a separate method (called from __str__) so that subclasses may
+        override it.
+        """
+        for p in self.parameters:
+            #Check for missing required parameters:
+            if p.is_required and not(p.is_set):
+                raise ValueError("Parameter %s is not set." \
+                                 % p.names[-1])
+            #Also repeat the parameter validation here, just in case?
+
     def __str__(self):
         """Make the commandline string with the currently set options.
 
@@ -209,10 +253,9 @@ class AbstractCommandline(object):
         >>> str(cline)
         'water -outfile=temp_water.txt -asequence=asis:ACCCGGGCGCGGT -bsequence=asis:ACCCGAGCGCGGT -gapopen=10 -gapextend=0.5'
         """
+        self._validate()
         commandline = "%s " % self.program_name
         for parameter in self.parameters:
-            if parameter.is_required and not(parameter.is_set):
-                raise ValueError("Parameter %s is not set." % parameter.names[-1])
             if parameter.is_set:
                 #This will include a trailing space:
                 commandline += str(parameter)
@@ -290,19 +333,19 @@ class AbstractCommandline(object):
     def _check_value(self, value, name, check_function):
         """Check whether the given value is valid.
 
+        No return value - it either works or raises a ValueError.
+
         This uses the passed function 'check_function', which can either
         return a [0, 1] (bad, good) value or raise an error. Either way
         this function will raise an error if the value is not valid, or
         finish silently otherwise.
         """
-        #TODO - Allow check_function to return True/False?
         if check_function is not None:
-            is_good = check_function(value)
-            if is_good in [0, 1]: # if we are dealing with a good/bad check
-                if not(is_good):
-                    raise ValueError(
-                            "Invalid parameter value %r for parameter %s" %
-                            (value, name))
+            is_good = check_function(value) #May raise an exception
+            assert is_good in [0,1,True,False]
+            if not is_good :
+                raise ValueError("Invalid parameter value %r for parameter %s" \
+                                 % (value, name))
                     
 class _AbstractParameter:
     """A class to hold information about a parameter for a commandline.
@@ -483,11 +526,7 @@ def _escape_filename(filename) :
         return '"%s"' % filename
 
 def _test():
-    """Run the Bio.Application module's doctests.
-
-    This will try and locate the unit tests directory, and run the doctests
-    from there in order that the relative paths used in the examples work.
-    """
+    """Run the Bio.Application module's doctests."""
     import doctest
     doctest.testmod(verbose=1)
 

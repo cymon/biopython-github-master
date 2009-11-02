@@ -244,9 +244,9 @@ class GenBankWriter(SequentialSequenceWriter) :
         if not isinstance(a, Alphabet.Alphabet) :
             raise TypeError("Invalid alphabet")
         elif isinstance(a, Alphabet.ProteinAlphabet) :
-            units = "bp"
-        elif isinstance(a, Alphabet.NucleotideAlphabet) :
             units = "aa"
+        elif isinstance(a, Alphabet.NucleotideAlphabet) :
+            units = "bp"
         else :
             #Must be something like NucleotideAlphabet or
             #just the generic Alphabet (default for fasta files)
@@ -332,6 +332,50 @@ class GenBankWriter(SequentialSequenceWriter) :
         else :
             return str(answer)
 
+    def _write_comment(self, record):
+        #This is a bit complicated due to the range of possible
+        #ways people might have done their annotation...
+        #Currently the parser uses a single string with newlines.
+        #A list of lines is also reasonable.
+        #A single (long) string is perhaps the most natural of all.
+        #This means we may need to deal with line wrapping.
+        comment = record.annotations["comment"]
+        if isinstance(comment, basestring) :
+            lines = comment.split("\n")
+        elif isinstance(comment, list) or isinstance(comment, tuple) :
+            lines = comment
+        else :
+            raise ValueError("Could not understand comment annotation")
+        self._write_multi_line("COMMENT",lines[0])
+        for line in lines[1:] :
+            self._write_multi_line("",line)
+
+    def _write_contig(self, record):
+        #TODO - Merge this with _write_multi_line method?
+        #It would need the addition of the comma splitting logic...
+        #are there any other cases where that would be sensible?
+        max_len = self.MAX_WIDTH - self.HEADER_WIDTH
+        contig = record.annotations.get("contig","")
+        if isinstance(contig, list) or isinstance(contig, tuple) :
+            contig = "".join(contig)
+        contig = self.clean(contig)
+        i=0
+        while contig :
+            if len(contig) > max_len :
+                #Split lines at the commas
+                pos = contig[:max_len-1].rfind(",")
+                if pos==-1 :
+                    raise ValueError("Could not break up CONTIG")
+                text, contig = contig[:pos+1], contig[pos+1:]
+            else :
+                text, contig = contig, ""
+            if i==0 :
+                self._write_single_line("CONTIG",text)
+            else :
+                self._write_single_line("",text)
+            i+=1
+            
+
     def _write_sequence(self, record):
         #Loosely based on code from Howard Salis
         #TODO - Force lower case?
@@ -341,10 +385,15 @@ class GenBankWriter(SequentialSequenceWriter) :
         if isinstance(record.seq, UnknownSeq) :
             #We have already recorded the length, and there is no need
             #to record a long sequence of NNNNNNN...NNN or whatever.
+            if "contig" in record.annotations :
+                self._write_contig(record)
+            else :
+                self.handle.write("ORIGIN\n")
             return
 
         data = self._get_seq_string(record) #Catches sequence being None
         seq_len = len(data)
+        self.handle.write("ORIGIN\n")
         for line_number in range(0,seq_len,LETTERS_PER_LINE):
             self.handle.write(str(line_number+1).rjust(SEQUENCE_INDENT))
             for words in range(line_number,min(line_number+LETTERS_PER_LINE,seq_len),10):
@@ -414,10 +463,11 @@ class GenBankWriter(SequentialSequenceWriter) :
         self._write_multi_line("", taxonomy)
 
         #TODO - References...
+        if "comment" in record.annotations :
+            self._write_comment(record)
         handle.write("FEATURES             Location/Qualifiers\n")
         for feature in record.features :
             self._write_feature(feature) 
-        handle.write("ORIGIN\n")
         self._write_sequence(record)
         handle.write("//\n")
 
@@ -478,9 +528,12 @@ class GenBankWriter(SequentialSequenceWriter) :
         self.handle.write(line)
         #Now the qualifiers...
         for key, values in feature.qualifiers.iteritems() :
-            if values :
+            if isinstance(values, list) or isinstance(values, tuple) :
                 for value in values :
                     self._write_feature_qualifier(key, value)
+            elif values :
+                #String, int, etc
+                self._write_feature_qualifier(key, values)
             else :
                 #e.g. a /psuedo entry
                 self._write_feature_qualifier(key)
@@ -510,6 +563,9 @@ if __name__ == "__main__" :
             raise ValueError("%s versus %s" \
                              % (repr(old.description), repr(new.description)))
         #TODO - check annotation
+        if "contig" in old.annotations :
+            assert old.annotations["contig"] == \
+                   new.annotations["contig"]
         return True
 
     def compare_records(old_list, new_list) :

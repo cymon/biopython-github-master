@@ -10,7 +10,7 @@ from Bio import AlignIO
 from Bio.Align.Generic import Alignment
 from Bio.Align import AlignInfo
 
-test_write_read_alignment_formats = AlignIO._FormatToWriter.keys()
+test_write_read_alignment_formats = sorted(AlignIO._FormatToWriter.keys())
 test_write_read_align_with_seq_count = test_write_read_alignment_formats \
                                      + ["fasta", "tab"]
 
@@ -181,6 +181,13 @@ for t_format in AlignIO._FormatToIterator :
      handle = StringIO()
      alignments = list(AlignIO.parse(handle, t_format))
      assert len(alignments) == 0
+
+#Check writers can cope with no alignments
+for t_format in list(AlignIO._FormatToWriter)+list(SeqIO._FormatToWriter) :
+     handle = StringIO()
+     assert 0 == AlignIO.write([], handle, t_format), \
+            "Writing no alignments to %s format should work!" \
+            % t_format
 
 #Check writers reject non-alignments
 list_of_records = list(AlignIO.read(open("Clustalw/opuntia.aln"),"clustal"))

@@ -35,8 +35,10 @@
 
 __doc__="Access the PDB over the internet (for example to download structures)."
 
+#TODO - Use os.path.join(...) instead of adding strings with os.sep
 import urllib, re, os
-from warnings import warn
+import warnings
+import shutil
 
 class PDBList:
     """
@@ -92,19 +94,17 @@ class PDBList:
         """Retrieves a list of pdb codes in the weekly pdb status file
         from the given URL. Used by get_recent_files.
         
-        Typical contents of the list files parsed by this method;
--rw-r--r--   1 rcsb     rcsb      330156 Oct 14  2003 pdb1cyq.ent
--rw-r--r--   1 rcsb     rcsb      333639 Oct 14  2003 pdb1cz0.ent
+        Typical contents of the list files parsed by this method is now
+        very simply one PDB name per line.
         """
-        url = urllib.urlopen(url)
-        file = url.readlines()
-        list = []
-
-        # added by S. Lee
-        list = map(lambda x: x[3:7], \
-                   filter(lambda x: x[-4:] == '.ent', \
-                          map(lambda x: x.split()[-1], file)))
-        return list
+        handle = urllib.urlopen(url)
+        answer = []
+        for line in handle :
+            pdb = line.strip()
+            assert len(pdb)==4
+            answer.append(pdb)
+        handle.close()
+        return answer
 
 
     def get_recent_changes(self):
@@ -117,9 +117,9 @@ class PDBList:
         Returns None if something goes wrong.
         
         Contents of the data/status dir (20031013 would be used);
-drwxrwxr-x   2 1002     sysadmin     512 Oct  6 18:28 20031006
-drwxrwxr-x   2 1002     sysadmin     512 Oct 14 02:14 20031013
--rw-r--r--   1 1002     sysadmin    1327 Mar 12  2001 README
+        drwxrwxr-x   2 1002     sysadmin     512 Oct  6 18:28 20031006
+        drwxrwxr-x   2 1002     sysadmin     512 Oct 14 02:14 20031013
+        -rw-r--r--   1 1002     sysadmin    1327 Mar 12  2001 README
 
 
         """     
@@ -138,6 +138,7 @@ drwxrwxr-x   2 1002     sysadmin     512 Oct 14 02:14 20031013
             obsolete = self.get_status_list(path+'obsolete.pdb')
             return [added,modified,obsolete]
         except:
+            raise
             return None
 
 
@@ -165,16 +166,32 @@ drwxrwxr-x   2 1002     sysadmin     512 Oct 14 02:14 20031013
         in the PDB.
         
         Gets and parses the file from the PDB server in the format
-        (the first pdb_code column is the one used).
- LIST OF OBSOLETE COORDINATE ENTRIES AND SUCCESSORS
-OBSLTE     30-SEP-03 1Q1D      1QZR
-OBSLTE     26-SEP-03 1DYV      1UN2    
-        """
-        url = urllib.urlopen(self.pdb_server+'/pub/pdb/data/status/obsolete.dat')
-        # extract pdb codes
-        obsolete = map(lambda x: x[21:25].lower(),
-                       filter(lambda x: x[:6] == 'OBSLTE', url.readlines()))
+        (the first pdb_code column is the one used). The file looks
+        like this:
 
+         LIST OF OBSOLETE COORDINATE ENTRIES AND SUCCESSORS
+        OBSLTE    31-JUL-94 116L     216L
+        ...
+        OBSLTE    29-JAN-96 1HFT     2HFT
+        OBSLTE    21-SEP-06 1HFV     2J5X
+        OBSLTE    21-NOV-03 1HG6     
+        OBSLTE    18-JUL-84 1HHB     2HHB 3HHB 
+        OBSLTE    08-NOV-96 1HID     2HID
+        OBSLTE    01-APR-97 1HIU     2HIU
+        OBSLTE    14-JAN-04 1HKE     1UUZ
+        ...
+
+        """
+        handle = urllib.urlopen(self.pdb_server+'/pub/pdb/data/status/obsolete.dat')
+        # extract pdb codes. Could use a list comprehension, but I want
+        # to include an assert to check for mis-reading the data.
+        obsolete = []
+        for line in handle :
+            if not line.startswith("OBSLTE ") : continue
+            pdb = line.split()[2]
+            assert len(pdb)==4
+            obsolete.append(pdb)
+        handle.close()
         return obsolete
 
 
@@ -234,7 +251,7 @@ OBSLTE     26-SEP-03 1DYV      1UN2
         if not self.overwrite:
             if os.path.exists(final_file):
                 warnings.warn("file exists, not retrieved %s" % final_file,
-                              RuntimeError)
+                              RuntimeWarning)
                 return final_file
 
         # Retrieve the file
@@ -245,7 +262,6 @@ OBSLTE     26-SEP-03 1DYV      1UN2
         os.system("%s %s" % (uncompress, filename))
 
         return final_file
-
             
 
     def update_pdb(self):
@@ -265,7 +281,7 @@ OBSLTE     26-SEP-03 1DYV      1UN2
                 warnings.warn('retrieving %s' % pdb_code)
                 self.retrieve_pdb_file(pdb_code)
             except:
-                warnings.warn('error %s' % pdb_code, RuntimeError)
+                warnings.warn('error %s' % pdb_code, RuntimeWarning)
                 # you can insert here some more log notes that
                 # something has gone wrong.            
 
@@ -277,7 +293,7 @@ OBSLTE     26-SEP-03 1DYV      1UN2
             else:
                 old_file = self.local_pdb + os.sep + pdb_code[1:3] + os.sep + 'pdb%s.ent'%(pdb_code)
                 new_file = self.obsolete_pdb + os.sep + pdb_code[1:3] + os.sep + 'pdb%s.ent'%(pdb_code)
-        os.cmd('mv %s %s'%(old_file,new_file))
+        shutil.move(old_file, new_file)
 
 
     def download_entire_pdb(self,listfile=None):

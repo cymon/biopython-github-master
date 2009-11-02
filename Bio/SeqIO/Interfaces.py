@@ -1,4 +1,4 @@
-# Copyright 2006-2008 by Peter Cock.  All rights reserved.
+# Copyright 2006-2009 by Peter Cock.  All rights reserved.
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
@@ -165,10 +165,7 @@ class SequenceWriter:
 
     def clean(self, text) :
         """Use this to avoid getting newlines in the output."""
-        answer = text
-        for x in ["\n", "\r"] :
-            answer = answer.replace(x, " ")
-        return answer.replace("  ", " ")
+        return text.replace("\n", " ").replace("\r", " ").replace("  ", " ")
     
     def write_file(self, records) :
         """Use this to write an entire file containing the given records.
@@ -178,7 +175,8 @@ class SequenceWriter:
         Should return the number of records (as an integer).
 
         This method can only be called once."""
-        #Note when implementing this, you should close the file at the end.
+        #Note when implementing this, your writer class should NOT close the
+        #file at the end, but the calling code should.
         raise NotImplementedError("This object should be subclassed")
         #####################################################
         # You SHOULD subclass this                          #
