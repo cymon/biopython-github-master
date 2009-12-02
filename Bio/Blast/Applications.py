@@ -15,12 +15,14 @@ Obsolete wrappers for the old/classic NCBI BLAST tools (written in C):
 
 Wrappers for the new NCBI BLAST+ tools (written in C++):
 
-- NcbiblastpCommandline
-- NcbiblastnCommandline
-- NcbiblastxCommandline
-- NcbitblastnCommandline
-- NcbitblastxCommandline
-- Others pending
+- NcbiblastpCommandline - Protein-Protein BLAST
+- NcbiblastnCommandline - Nucleotide-Nucleotide BLAST
+- NcbiblastxCommandline - Translated Query-Protein Subject BLAST
+- NcbitblastnCommandline - Protein Query-Translated Subject BLAST
+- NcbitblastxCommandline - Translated Query-Protein Subject BLAST
+- NcbipsiblastCommandline - Position-Specific Initiated BLAST
+- NcbirpsblastCommandline - Reverse Position Specific BLAST
+- NcbirpstblastnCommandline - Translated Reverse Position Specific BLAST
 
 """
 from Bio.Application import _Option, AbstractCommandline, _Switch
@@ -40,15 +42,17 @@ class FastacmdCommandline(AbstractCommandline):
         AbstractCommandline.__init__(self, cmd, **kwargs)
 
 
-class _BlastCommandLine(AbstractCommandline) :
+class _BlastCommandLine(AbstractCommandline):
     """Base Commandline object for (classic) NCBI BLAST wrappers (PRIVATE).
 
     This is provided for subclassing, it deals with shared options
-    common to all the BLAST tools (blastall, rpsblast, pgpblast).
+    common to all the BLAST tools (blastall, rpsblast, blastpgp).
     """
     def __init__(self, cmd=None, **kwargs):
         assert cmd is not None
         extra_parameters = [\
+           _Switch(["--help", "help"], ["input"],
+                    "Print USAGE, DESCRIPTION and ARGUMENTS description;  ignore other arguments."),
            _Option(["-d", "database"], ["input"], None, 1,
                    "The database to BLAST against.", False),
            _Option(["-i", "infile"], ["input", "file"], None, 1,
@@ -93,7 +97,7 @@ class _BlastCommandLine(AbstractCommandline) :
            _Option(["-g", "gapped"], ["input"], None, 0, 
                    "Whether to do a gapped alignment.  T/F", False),
         ]
-        try :
+        try:
             #Insert extra parameters - at the start just in case there
             #are any arguments which must come last:
             self.parameters = extra_parameters + self.parameters
@@ -102,12 +106,18 @@ class _BlastCommandLine(AbstractCommandline) :
             self.parameters = extra_parameters
         AbstractCommandline.__init__(self, cmd, **kwargs)
 
+    def _validate(self):
+        if self.help:
+            #Don't want to check the normally mandatory arguments like db
+            return
+        AbstractCommandline._validate(self)
 
-class _BlastAllOrPgpCommandLine(_BlastCommandLine) :
+
+class _BlastAllOrPgpCommandLine(_BlastCommandLine):
     """Base Commandline object for NCBI BLAST wrappers (PRIVATE).
 
     This is provided for subclassing, it deals with shared options
-    common to all the blastall and pgpblast tools (but not rpsblast).
+    common to all the blastall and blastpgp tools (but not rpsblast).
     """
     def __init__(self, cmd=None, **kwargs):
         assert cmd is not None
@@ -128,7 +138,7 @@ class _BlastAllOrPgpCommandLine(_BlastCommandLine) :
                    "Hits/passes.  Integer 0-2. 0 for multiple hit, "
                    "1 for single hit (does not apply to blastn)", False),
         ]
-        try :
+        try:
             #Insert extra parameters - at the start just in case there
             #are any arguments which must come last:
             self.parameters = extra_parameters + self.parameters
@@ -228,10 +238,21 @@ class BlastpgpCommandline(_BlastAllOrPgpCommandLine):
     """Create a commandline for the blastpgp program from NCBI (OBSOLETE).
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
-    are replacing blastpgp with a renamed tool psiblast.
+    are replacing blastpgp with a renamed tool psiblast. This module provides
+    NcbipsiblastCommandline as a wrapper for the new tool psiblast.
     
     Like blastpgp (and blastall), this wrapper is now obsolete, and will be
     deprecated and removed in a future release of Biopython.
+
+    >>> from Bio.Blast.Applications import BlastpgpCommandline
+    >>> cline = BlastpgpCommandline(help=True)
+    >>> cline
+    BlastpgpCommandline(cmd='blastpgp', help=True)
+    >>> print cline
+    blastpgp --help
+
+    You would typically run the command line with the Python subprocess module,
+    as described in the Biopython tutorial.
     """
     def __init__(self, cmd="blastpgp",**kwargs):
         self.parameters = [ \
@@ -272,11 +293,24 @@ class RpsBlastCommandline(_BlastCommandLine):
     """Create a commandline for the classic rpsblast program from NCBI (OBSOLETE).
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
-    are replacing the old rpsblast with a new version of the same name, taking
-    different command line arguments.
+    are replacing the old rpsblast with a new version of the same name plus a
+    second tool rpstblastn, both taking different command line arguments. This
+    module provides NcbirpsblastCommandline and NcbirpsblasntCommandline as
+    wrappers for the new tools.
     
-    Like the old rpsblast (and blastall), this wrapper is now obsolete, and will be
-    deprecated and removed in a future release of Biopython."""
+    Like the old rpsblast (and blastall), this wrapper is now obsolete, and will
+    be deprecated and removed in a future release of Biopython.
+
+    >>> from Bio.Blast.Applications import RpsBlastCommandline
+    >>> cline = RpsBlastCommandline(help=True)
+    >>> cline
+    RpsBlastCommandline(cmd='rpsblast', help=True)
+    >>> print cline
+    rpsblast --help
+
+    You would typically run the command line with the Python subprocess module,
+    as described in the Biopython tutorial.
+    """
     def __init__(self, cmd="rpsblast",**kwargs):
         self.parameters = [ \
            #Note -N is also in blastpgp, but not blastall
@@ -296,12 +330,12 @@ class RpsBlastCommandline(_BlastCommandLine):
         ] 
         _BlastCommandLine.__init__(self, cmd, **kwargs)
 
-#Further classes in the heirachy will probably be needed...
-class _NcbiblastCommandline(AbstractCommandline) :
+   
+class _NcbiblastCommandline(AbstractCommandline):
     """Base Commandline object for (classic) NCBI BLAST wrappers (PRIVATE).
 
     This is provided for subclassing, it deals with shared options
-    common to all the BLAST tools (blastall, rpsblast, pgpblast).
+    common to all the BLAST tools (blastn, rpsblast, rpsblast, etc).
     """
     def __init__(self, cmd=None, **kwargs):
         assert cmd is not None
@@ -325,17 +359,12 @@ class _NcbiblastCommandline(AbstractCommandline) :
                     "Output file for alignment.", False),
             _Option(["-evalue", "evalue"], ["input"], None, 0, 
                     "Expectation value cutoff.", False),
+            _Option(["-word_size","word_size"], ["input"], None, 0,
+                    """Word size for wordfinder algorithm.
+
+                    Integer. Minimum 2.""", False),
             #BLAST-2-Sequences options:
-            _Option(["-subject", "subject"], ["input", "file"], None, 0,
-                    """Subject sequence(s) to search.
-
-                    Incompatible with:  db, gilist, negative_gilist.
-                    See also subject_loc.""", False),
-            _Option(["-subject_loc", "subject_loc"], ["input"], None, 0,
-                    """Location on the subject sequence (Format: start-stop)
-
-                    Incompatible with:  db, gilist, negative_gilist, remote.
-                    See also subject.""", False),
+            # - see subclass
             #Formatting options:
             _Option(["-outfmt", "outfmt"], ["input"], None, 0, 
                     "Alignment view.  Integer 0-10.  Use 5 for XML output (differs from classic BLAST which used 7 for XML).",
@@ -356,22 +385,32 @@ class _NcbiblastCommandline(AbstractCommandline) :
                     "Produce HTML output? See also the outfmt option."),
             #Query filtering options
             # TODO -soft_masking <Boolean>, is this a switch or an option?
+            #_Switch(["-soft_masking", "soft_masking"], ["input"],
+            #        "Apply filtering locations as soft masks?"),
             _Switch(["-lcase_masking", "lcase_masking"], ["input"],
                     "Use lower case filtering in query and subject sequence(s)?"),
             #Restrict search or results
             _Option(["-gilist", "gilist"], ["input", "file"], None, 0,
                     """Restrict search of database to list of GI's.
  
-                    Incompatible with:  negative_gilist, remote, subject, subject_loc""",
+                    Incompatible with: negative_gilist, remote, subject, subject_loc""",
                     False),
             _Option(["-negative_gilist", "negative_gilist"], ["input", "file"], None, 0,
                     """Restrict search of database to everything except the listed GIs.
  
-                    Incompatible with:  gilist, remote, subject, subject_loc""",
+                    Incompatible with: gilist, remote, subject, subject_loc""",
                     False),
+            _Option(["-entrez_query", "entrez_query"], ["input"], None, 0,
+                    "Restrict search with the given Entrez query (requires remote).", False),
+            _Option(["-max_target_seqs", "max_target_seqs"], ["input"], None, 0,
+                    """Maximum number of aligned sequences to keep.
+
+                    Integer argument (at least one).""", False),
             #Statistical options
             _Option(["-dbsize", "dbsize"], ["input"], None, 0,
                     "Effective length of the database (integer)", False),
+            _Option(["-searchsp", "searchsp"], ["input"], None, 0,
+                    "Effective length of the search space (integer)", False),
             #Extension options
             _Option(["-xdrop_ungap", "xdrop_ungap"], ["input"], None, 0,
                     "X-dropoff value (in bits) for ungapped extensions. Float.",
@@ -385,18 +424,31 @@ class _NcbiblastCommandline(AbstractCommandline) :
             _Option(["-window_size", "window_size"], ["input"], None, 0,
                     "Multiple hits window size, use 0 to specify 1-hit algorithm. Integer.",
                     False),
+            # Search strategy options
+            _Option(["-import_search_strategy", "import_search_strategy"],
+                    ["input", "file"], None, 0,
+                    """Search strategy to use.
+
+                    Incompatible with: export_search_strategy""", False),
+            _Option(["-export_search_strategy", "export_search_strategy"],
+                    ["output", "file"], None, 0,
+                    """File name to record the search strategy used.
+
+                    Incompatible with: import_search_strategy""", False),
             #Miscellaneous options
+            _Switch(["-parse_deflines", "parse_deflines"], ["input"],
+                    "Should the query and subject defline(s) be parsed?"),
             _Option(["-num_threads", "num_threads"], ["input"], None, 0,
                     """Number of threads to use in the BLAST search.
 
                     Integer of at least one. Default is one.
-                    Incompatible with:  remote""", False),
+                    Incompatible with: remote""", False),
             _Switch(["-remote", "remote"], ["input"],
                     """Execute search remotely?
 
-                    Incompatible with:  gilist, negative_gilist, subject_loc, num_threads, ..."""),
+                    Incompatible with: gilist, negative_gilist, subject_loc, num_threads, ..."""),
             ]
-        try :
+        try:
             #Insert extra parameters - at the start just in case there
             #are any arguments which must come last:
             self.parameters = extra_parameters + self.parameters
@@ -405,19 +457,89 @@ class _NcbiblastCommandline(AbstractCommandline) :
             self.parameters = extra_parameters
         AbstractCommandline.__init__(self, cmd, **kwargs)
 
-    def _validate(self) :
-        incompatibles = {"remote":["gilist", "negative_gilist", "subject_loc", "num_threads"],
-                         "subject":["db", "gilist", "negative_gilist"],
+    def _validate(self):
+        incompatibles = {"remote":["gilist", "negative_gilist", "num_threads"],
+                         "import_search_strategy" : ["export_search_strategy"],
                          "gilist":["negative_gilist"]}
-        for a in incompatibles :
-            if self._get_parameter(a) :
-                for b in incompatibles[a] :
-                    if self._get_parameter(b) :
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
                         raise ValueError("Options %s and %s are incompatible." \
                                          % (a,b))
+        if self.entrez_query and not self.remote :
+            raise ValueError("Option entrez_query requires remote option.")
         AbstractCommandline._validate(self)
 
-class NcbiblastpCommandline(_NcbiblastCommandline) :
+class _Ncbiblast2SeqCommandline(_NcbiblastCommandline):
+    """Base Commandline object for (classic) NCBI BLAST wrappers (PRIVATE).
+
+    This is provided for subclassing, it deals with shared options
+    common to all the BLAST tools supporting two-sequence BLAST
+    (blastn, psiblast, etc) but not rpsblast or rpstblastn.
+    """
+    def __init__(self, cmd=None, **kwargs):
+        assert cmd is not None
+        extra_parameters = [ \
+            #General search options:
+            _Option(["-gapopen", "gapopen"], ["input"], None, 0,
+                    "Cost to open a gap (integer).", False),
+            _Option(["-gapextend", "gapextend"], ["input"], None, 0,
+                    "Cost to extend a gap (integer).", False),
+            #BLAST-2-Sequences options:
+            _Option(["-subject", "subject"], ["input", "file"], None, 0,
+                    """Subject sequence(s) to search.
+
+                    Incompatible with: db, gilist, negative_gilist.
+                    See also subject_loc.""", False),
+            _Option(["-subject_loc", "subject_loc"], ["input"], None, 0,
+                    """Location on the subject sequence (Format: start-stop)
+
+                    Incompatible with: db, gilist, negative_gilist, remote.
+                    See also subject.""", False),
+            #Restrict search or results:
+            _Option(["-culling_limit", "culling_limit"], ["input"], None, 0,
+                    """Hit culling limit (integer).
+
+                    If the query range of a hit is enveloped by that of at least this many
+                    higher-scoring hits, delete the hit.
+
+                    Incompatible with: best_hit_overhang, best_hit_score_edge.""", False),
+            _Option(["-best_hit_overhang", "best_hit_overhang"], ["input"], None, 0,
+                    """Best Hit algorithm overhang value (recommended value: 0.1)
+
+                    Float between 0.0 and 0.5 inclusive.
+
+                    Incompatible with: culling_limit.""", False),
+            _Option(["-best_hit_score_edge", "best_hit_score_edge"], ["input"], None, 0,
+                    """Best Hit algorithm score edge value (recommended value: 0.1)
+
+                    Float between 0.0 and 0.5 inclusive.
+
+                    Incompatible with: culling_limit.""", False),            ]
+        try:
+            #Insert extra parameters - at the start just in case there
+            #are any arguments which must come last:
+            self.parameters = extra_parameters + self.parameters
+        except AttributeError:
+            #Should we raise an error?  The subclass should have set this up!
+            self.parameters = extra_parameters
+        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+
+
+    def _validate(self):
+        incompatibles = {"subject_loc":["db, gilist, negative_gilist, remote"],
+                         "culling_limit":["best_hit_overhang","best_hit_score_edge"],
+                         "subject":["db", "gilist", "negative_gilist"]}
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                         % (a,b))
+        _NcbiblastCommandline._validate(self)
+
+class NcbiblastpCommandline(_Ncbiblast2SeqCommandline):
     """Create a commandline for the NCBI BLAST+ program blastp (for proteins).
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
@@ -437,12 +559,57 @@ class NcbiblastpCommandline(_NcbiblastCommandline) :
     """
     def __init__(self, cmd="blastp", **kwargs):
         self.parameters = [ \
+            #General search options:
+            _Option(["-task", "task"], ["input"],
+                    lambda value : value in ["blastp", "blastp-short"], 0,
+                    "Task to execute (string, blastp (default) or blastp-short).", False),
+            _Option(["-matrix", "matrix"], ["input"], None, 0,
+                    "Scoring matrix name (default BLOSUM62).", False),
+            _Option(["-threshold", "threshold"], ["input"], None, 0,
+                    "Minimum word score such that the word is added to the BLAST lookup table (float)", False),
+            _Option(["-comp_based_stats", "comp_based_stats"], ["input"],
+                    lambda value : value in "0Ft2TtDd", 0,
+                    """Use composition-based statistics (string, default 2, i.e. True).
+
+                    0, F or f: no composition-based statistics
+                    2, T or t, D or d : Composition-based score adjustment as in
+                    Bioinformatics 21:902-911, 2005, conditioned on sequence properties
+
+                    Note that tblastn also supports values of 1 and 3.""", False),
+            #Query filtering options:
+            _Option(["-seg", "seg"], ["input"], None, 0,
+                    """Filter query sequence with SEG (string).
+
+                    Format: "yes", "window locut hicut", or "no" to disable.
+                    Default is "12 2.2 2.5""", False),
+            #Restrict search or results:
+            _Option(["-db_soft_mask", "db_soft_mask"], ["input"], None, 0,
+                    """Filtering algorithm for soft masking (integer).
+
+                    Filtering algorithm ID to apply to the BLAST database as soft masking.
+
+                    Incompatible with: subject, subject_loc""", False),
+            #Extension options:
             _Switch(["-ungapped", "ungapped"], ["input"],
                     "Perform ungapped alignment only?"),
+            #Miscellaneous options:
+            _Switch(["-use_sw_tback", "use_sw_tback"], ["input"],
+                    "Compute locally optimal Smith-Waterman alignments?"),
             ]
-        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+        _Ncbiblast2SeqCommandline.__init__(self, cmd, **kwargs)
 
-class NcbiblastnCommandline(_NcbiblastCommandline) :
+    def _validate(self):
+        incompatibles = {"db_soft_mask":["subject", "subject_loc"]}
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                         % (a,b))
+        _Ncbiblast2SeqCommandline._validate(self)
+
+
+class NcbiblastnCommandline(_Ncbiblast2SeqCommandline):
     """Wrapper for the NCBI BLAST+ program blastn (for nucleotides).
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
@@ -454,25 +621,102 @@ class NcbiblastnCommandline(_NcbiblastCommandline) :
     cut off of 0.001, saving the output to a file in XML format:
 
     >>> from Bio.Blast.Applications import NcbiblastnCommandline
-    >>> cline = NcbiblastnCommandline(query="m_cold.fasta", db="nt",
+    >>> cline = NcbiblastnCommandline(query="m_cold.fasta", db="nt", strand="plus",
     ...                               evalue=0.001, out="m_cold.xml", outfmt=5)
     >>> cline
-    NcbiblastnCommandline(cmd='blastn', query='m_cold.fasta', db='nt', out='m_cold.xml', evalue=0.001, outfmt=5)
+    NcbiblastnCommandline(cmd='blastn', query='m_cold.fasta', db='nt', out='m_cold.xml', evalue=0.001, outfmt=5, strand='plus')
     >>> print cline
-    blastn -query m_cold.fasta -db nt -out m_cold.xml -evalue 0.001 -outfmt 5
+    blastn -query m_cold.fasta -db nt -out m_cold.xml -evalue 0.001 -outfmt 5 -strand plus
 
     You would typically run the command line with the Python subprocess module,
     as described in the Biopython tutorial.
     """
     def __init__(self, cmd="blastn", **kwargs):
         self.parameters = [ \
+            #Input query options:
+            _Option(["-strand", "strand"], ["input"],
+                    lambda value : value in ["both", "minus", "plus"],0,
+                    """Query strand(s) to search against database/subject.
+
+                    Values allowed are "both" (default), "minus", "plus".""", False),
+            #General search options:
+            _Option(["-task", "task"], ["input"],
+                    lambda value : value in ['blastn', 'blastn-short', 'dc-megablast',
+                                             'megablast', 'vecscreen'], 0,
+                    """Task to execute (string, default 'megablast')
+
+                    Allowed values 'blastn', 'blastn-short', 'dc-megablast', 'megablast'
+                    (the default), or 'vecscreen'.""", False),
+            _Option(["-penalty", "penalty"], ["input"], None, 0,
+                    "Penalty for a nucleotide mismatch (integer, at most zero).", False),
+            _Option(["-reward", "reward"], ["input"], None, 0,
+                    "Reward for a nucleotide match (integer, at least zero).", False),
+            #TODO - Does this need an argument or is it a switch?
+            #_Option(["-use_index", "use_index"], ["input"], None, 0,
+            #        "Use MegaBLAST database index (boolean).", False),
+            _Option(["-index_name", "index_name"], ["input"], None, 0,
+                    "MegaBLAST database index name.", False),
+            #Query filtering options:
+            _Option(["-dust", "dust"], ["input"], None, 0,
+                    """Filter query sequence with DUST (string).
+
+                    Format: 'yes', 'level window linker', or 'no' to disable.
+                    Default = '20 64 1'.
+                    """, False),
+            _Option(["-filtering_db", "filtering_db"], ["input"], None, 0,
+                    "BLAST database containing filtering elements (i.e. repeats).", False),
+            _Option(["-window_masker_taxid", "window_masker_taxid"], ["input"], None, 0,
+                    "Enable WindowMasker filtering using a Taxonomic ID (integer).", False),
+            _Option(["-window_masker_db", "window_masker_db"], ["input"], None, 0,
+                    "Enable WindowMasker filtering using this repeats database (string).", False),
+            #Restrict search or results:
+            _Option(["-db_soft_mask", "db_soft_mask"], ["input"], None, 0,
+                    """Filtering algorithm for soft masking (integer).
+
+                    Filtering algorithm ID to apply to the BLAST database as soft masking.
+
+                    Incompatible with: subject, subject_loc""", False),
+            _Option(["-perc_identity", "perc_identity"], ["input"], None, 0,
+                    "Percent identity (real, 0 to 100 inclusive).", False),
+            #Discontiguous MegaBLAST options
+            _Option(["-template_type", "template_type"], ["input"],
+                    lambda value : value in ['coding', 'coding_and_optimal','optimal'], 0,
+                    """Discontiguous MegaBLAST template type (string).
+
+                    Allowed values: 'coding', 'coding_and_optimal' or 'optimal'
+                    Requires: template_length.""", False),
+            _Option(["-template_length", "template_length"], ["input"],
+                    lambda value : value in [16,18,21,'16','18','21'], 0,
+                    """Discontiguous MegaBLAST template length (integer).
+
+                    Allowed values: 16, 18, 21
+                    
+                    Requires: template_type.""", False),
+            #Extension options:
+            _Switch(["-no_greedy", "no_greedy"], ["input"],
+                    "Use non-greedy dynamic programming extension"),
+            _Option(["-min_raw_gapped_score", "min_raw_gapped_score"], ["input"], None, 0,
+                    "Minimum raw gapped score to keep an alignment in the preliminary gapped and traceback stages (integer).", False),
             _Switch(["-ungapped", "ungapped"], ["input"],
                     "Perform ungapped alignment only?"),
             ]
-        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+        _Ncbiblast2SeqCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {"db_soft_mask":["subject", "subject_loc"]}
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                         % (a,b))
+        if (self.template_type and not self.template_length) \
+        or (self.template_length and not self.template_type) :
+            raise ValueError("Options template_type and template_type require each other.")
+        _Ncbiblast2SeqCommandline._validate(self)
 
 
-class NcbiblastxCommandline(_NcbiblastCommandline) :
+class NcbiblastxCommandline(_Ncbiblast2SeqCommandline):
     """Wrapper for the NCBI BLAST+ program blastx (nucleotide query, protein database).
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
@@ -491,13 +735,61 @@ class NcbiblastxCommandline(_NcbiblastCommandline) :
     """
     def __init__(self, cmd="blastx", **kwargs):
         self.parameters = [ \
+            #Input query options:
+            _Option(["-strand", "strand"], ["input"],
+                    lambda value : value in ["both", "minus", "plus"],0,
+                    """Query strand(s) to search against database/subject.
+
+                    Values allowed are "both" (default), "minus", "plus".""", False),
+            #Input query options:
+            _Option(["-query_gencode", "query_gencode"], ["input"], None, 0,
+                    """Genetic code to use to translate query
+
+                    Integer. Default is one.""", False),
+            #General search options:
+            _Option(["-frame_shift_penalty", "frame_shift_penalty"], ["input"], None, 0,
+                    "Frame shift penalty (integer, at least 1, default ignored).", False),
+            _Option(["-max_intron_length", "max_intron_length"], ["input"], None, 0,
+                    """Maximum intron length (integer).
+
+                    Length of the largest intron allowed in a translated nucleotide
+                    sequence when linking multiple distinct alignments (a negative
+                    value disables linking). Default zero.""", False),
+            _Option(["-matrix", "matrix"], ["input"], None, 0,
+                    "Scoring matrix name (default BLOSUM62).", False),
+            _Option(["-threshold", "threshold"], ["input"], None, 0,
+                    "Minimum word score such that the word is added to the BLAST lookup table (float)", False),
+            #Query filtering options:
+            _Option(["-seg", "seg"], ["input"], None, 0,
+                    """Filter query sequence with SEG (string).
+
+                    Format: "yes", "window locut hicut", or "no" to disable.
+                    Default is "12 2.2 2.5""", False),
+            #Restrict search or results:
+            _Option(["-db_soft_mask", "db_soft_mask"], ["input"], None, 0,
+                    """Filtering algorithm for soft masking (integer).
+
+                    Filtering algorithm ID to apply to the BLAST database as soft masking.
+
+                    Incompatible with: subject, subject_loc""", False),
+            #Extension options:
             _Switch(["-ungapped", "ungapped"], ["input"],
                     "Perform ungapped alignment only?"),
             ]
-        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+        _Ncbiblast2SeqCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {"db_soft_mask":["subject", "subject_loc"]}
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                         % (a,b))
+        _Ncbiblast2SeqCommandline._validate(self)
 
 
-class NcbitblastnCommandline(_NcbiblastCommandline) :
+class NcbitblastnCommandline(_Ncbiblast2SeqCommandline):
     """Wrapper for the NCBI BLAST+ program tblastn.
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
@@ -516,13 +808,67 @@ class NcbitblastnCommandline(_NcbiblastCommandline) :
     """
     def __init__(self, cmd="tblastn", **kwargs):
         self.parameters = [ \
+            #General search options:
+            _Option(["-db_gencode", "db_gencode"], ["input"], None, 0,
+                    """Genetic code to use to translate query
+
+                    Integer. Default is one.""", False),
+            _Option(["-frame_shift_penalty", "frame_shift_penalty"], ["input"], None, 0,
+                    "Frame shift penalty (integer, at least 1, default ignored).", False),
+            _Option(["-max_intron_length", "max_intron_length"], ["input"], None, 0,
+                    """Maximum intron length (integer).
+
+                    Length of the largest intron allowed in a translated nucleotide
+                    sequence when linking multiple distinct alignments (a negative
+                    value disables linking). Default zero.""", False),
+            _Option(["-matrix", "matrix"], ["input"], None, 0,
+                    "Scoring matrix name (default BLOSUM62).", False),
+            _Option(["-threshold", "threshold"], ["input"], None, 0,
+                    "Minimum word score such that the word is added to the BLAST lookup table (float)", False),
+            _Option(["-comp_based_stats", "comp_based_stats"], ["input"],
+                    lambda value : value in "0Ft12TtDd3", 0,
+                    """Use composition-based statistics (string, default 2, i.e. True).
+
+                    0, F or f: no composition-based statistics
+                    1: Composition-based statistics as in NAR 29:2994-3005, 2001
+                    2, T or t, D or d : Composition-based score adjustment as in
+                       Bioinformatics 21:902-911, 2005, conditioned on sequence properties
+                    3: Composition-based score adjustment as in Bioinformatics 21:902-911,
+                       2005, unconditionally
+
+                    Note that only tblastn supports values of 1 and 3.""", False),
+            #Query filtering options:
+            _Option(["-seg", "seg"], ["input"], None, 0,
+                    """Filter query sequence with SEG (string).
+
+                    Format: "yes", "window locut hicut", or "no" to disable.
+                    Default is "12 2.2 2.5""", False),
+            #Extension options:
             _Switch(["-ungapped", "ungapped"], ["input"],
                     "Perform ungapped alignment only?"),
+            #Miscellaneous options:
+            _Switch(["-use_sw_tback", "use_sw_tback"], ["input"],
+                    "Compute locally optimal Smith-Waterman alignments?"),
+            #PSI-TBLASTN options:
+            _Option(["-in_pssm", "in_pssm"], ["input", "file"], None, 0,
+                    """PSI-BLAST checkpoint file
+
+                    Incompatible with: remote, query""", False),
             ]
-        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
+        _Ncbiblast2SeqCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {"in_pssm":["remote", "query"]}
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                         % (a,b))
+        _Ncbiblast2SeqCommandline._validate(self)
 
 
-class NcbitblastxCommandline(_NcbiblastCommandline) :
+class NcbitblastxCommandline(_Ncbiblast2SeqCommandline):
     """Wrapper for the NCBI BLAST+ program tblastx.
 
     With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
@@ -541,21 +887,213 @@ class NcbitblastxCommandline(_NcbiblastCommandline) :
     """
     def __init__(self, cmd="tblastx", **kwargs):
         self.parameters = [ \
-            #PSI-TBLASTN options:
-            _Option(["-in_pssm", "in_pssm"], ["input", "file"], None, 0,
-                    """PSI-TBLASTN checkpoint file
+            #Input query options:
+            _Option(["-strand", "strand"], ["input"],
+                    lambda value : value in ["both", "minus", "plus"],0,
+                    """Query strand(s) to search against database/subject.
 
-                    Incompatible with:  remote, query."""),
+                    Values allowed are "both" (default), "minus", "plus".""", False),
+            #Input query options:
+            _Option(["-query_gencode", "query_gencode"], ["input"], None, 0,
+                    """Genetic code to use to translate query
+
+                    Integer. Default is one.""", False),
+            #General search options:
+            _Option(["-db_gencode", "db_gencode"], ["input"], None, 0,
+                    """Genetic code to use to translate query
+
+                    Integer. Default is one.""", False),
+            _Option(["-max_intron_length", "max_intron_length"], ["input"], None, 0,
+                    """Maximum intron length (integer).
+
+                    Length of the largest intron allowed in a translated nucleotide
+                    sequence when linking multiple distinct alignments (a negative
+                    value disables linking). Default zero.""", False),
+            _Option(["-matrix", "matrix"], ["input"], None, 0,
+                    "Scoring matrix name (default BLOSUM62).", False),
+            _Option(["-threshold", "threshold"], ["input"], None, 0,
+                    "Minimum word score such that the word is added to the BLAST lookup table (float)", False),
+            #Query filtering options:
+            _Option(["-seg", "seg"], ["input"], None, 0,
+                    """Filter query sequence with SEG (string).
+
+                    Format: "yes", "window locut hicut", or "no" to disable.
+                    Default is "12 2.2 2.5""", False),
+           ]
+        _Ncbiblast2SeqCommandline.__init__(self, cmd, **kwargs)
+
+
+    def _validate(self):
+        if self.remote and self.in_pssm:
+            raise ValueError("The remote option cannot be used with in_pssm")
+        if self.query and self.in_pssm:
+            raise ValueError("The query option cannot be used with in_pssm")
+        _Ncbiblast2SeqCommandline._validate(self)
+
+
+class NcbipsiblastCommandline(_Ncbiblast2SeqCommandline):
+    """Wrapper for the NCBI BLAST+ program psiblast.
+
+    With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
+    replaced the old blastpgp tool with a similar tool psiblast. This wrapper
+    therefore replaces BlastpgpCommandline, the wrapper for blastpgp.
+
+    >>> from Bio.Blast.Applications import NcbipsiblastCommandline
+    >>> cline = NcbipsiblastCommandline(help=True)
+    >>> cline
+    NcbipsiblastCommandline(cmd='psiblast', help=True)
+    >>> print cline
+    psiblast -help
+
+    You would typically run the command line with the Python subprocess module,
+    as described in the Biopython tutorial.
+    """
+    def __init__(self, cmd="psiblast", **kwargs):
+        self.parameters = [ \
+            #General search options:
+            _Option(["-matrix", "matrix"], ["input"], None, 0,
+                    "Scoring matrix name (default BLOSUM62).", False),
+            _Option(["-threshold", "threshold"], ["input"], None, 0,
+                    "Minimum word score such that the word is added to the BLAST lookup table (float)", False),
+            _Option(["-comp_based_stats", "comp_based_stats"], ["input"],
+                    lambda value : value in "0Ft2TtDd", 0,
+                    """Use composition-based statistics (string, default 2, i.e. True).
+
+                    0, F or f: no composition-based statistics
+                    2, T or t, D or d : Composition-based score adjustment as in
+                    Bioinformatics 21:902-911, 2005, conditioned on sequence properties
+
+                    Note that tblastn also supports values of 1 and 3.""", False),
+            #Query filtering options:
+            _Option(["-seg", "seg"], ["input"], None, 0,
+                    """Filter query sequence with SEG (string).
+
+                    Format: "yes", "window locut hicut", or "no" to disable.
+                    Default is "12 2.2 2.5""", False),
+            #Extension options:
+            _Option(["-gap_trigger", "gap_trigger"], ["input"], None, 0,
+                    "Number of bits to trigger gapping (float, default 22)", False),
+            #Miscellaneous options:
+            _Switch(["-use_sw_tback", "use_sw_tback"], ["input"],
+                    "Compute locally optimal Smith-Waterman alignments?"),
+            #PSI-BLAST options:
+            _Option(["-num_iterations", "num_iterations"], ["input"], None, 0,
+                    """Number of iterations to perform, integer
+
+                    Integer of at least one. Default is one.
+                    Incompatible with: remote""", False),
+            _Option(["-out_pssm", "out_pssm"], ["output", "file"], None, 0,
+                    "File name to store checkpoint file", False),
+            _Option(["-out_ascii_pssm", "out_ascii_pssm"], ["output", "file"], None, 0,
+                    "File name to store ASCII version of PSSM", False),
+            _Option(["-in_msa", "in_msa"], ["input", "file"], None, 0,
+                    """File name of multiple sequence alignment to restart PSI-BLAST
+
+                    Incompatible with: in_pssm, query""", False),
+            _Option(["-in_pssm", "in_pssm"], ["input", "file"], None, 0,
+                    """PSI-BLAST checkpoint file
+
+                    Incompatible with: in_msa, query, phi_pattern""", False),
+            #PSSM engine options:
+            _Option(["-pseudocount", "pseudocount"], ["input"], None, 0,
+                    """Pseudo-count value used when constructing PSSM
+
+                    Integer. Default is zero.""", False),
+            _Option(["-inclusion_ethresh", "inclusion_ethresh"], ["input"], None, 0,
+                    """E-value inclusion threshold for pairwise alignments
+
+                    Float. Default is 0.002.""", False),
+            #PHI-BLAST options:
+            _Option(["-phi_pattern", "phi_pattern"], ["input", "file"], None, 0,
+                    """File name containing pattern to search
+
+                    Incompatible with: in_pssm""", False),
+            ]
+        _Ncbiblast2SeqCommandline.__init__(self, cmd, **kwargs)
+
+    def _validate(self):
+        incompatibles = {"num_iterations":["remote"],
+                         "in_msa":["in_pssm", "query"],
+                         "in_pssm":["in_msa","query","phi_pattern"]}
+        for a in incompatibles:
+            if self._get_parameter(a):
+                for b in incompatibles[a]:
+                    if self._get_parameter(b):
+                        raise ValueError("Options %s and %s are incompatible." \
+                                         % (a,b))
+        _Ncbiblast2SeqCommandline._validate(self)
+
+
+class NcbirpsblastCommandline(_NcbiblastCommandline):
+    """Wrapper for the NCBI BLAST+ program rpsblast.
+
+    With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
+    replaced the old rpsblast tool with a similar tool of the same name. This
+    wrapper replaces RpsBlastCommandline, the wrapper for the old rpsblast.
+
+    >>> from Bio.Blast.Applications import NcbirpsblastCommandline
+    >>> cline = NcbirpsblastCommandline(help=True)
+    >>> cline
+    NcbirpsblastCommandline(cmd='rpsblast', help=True)
+    >>> print cline
+    rpsblast -help
+
+    You would typically run the command line with the Python subprocess module,
+    as described in the Biopython tutorial.
+    """
+    def __init__(self, cmd="rpsblast", **kwargs):
+        self.parameters = [ \
+            #Query filtering options:
+            _Option(["-seg", "seg"], ["input"], None, 0,
+                    """Filter query sequence with SEG (string).
+
+                    Format: "yes", "window locut hicut", or "no" to disable.
+                    Default is "12 2.2 2.5""", False),
             ]
         _NcbiblastCommandline.__init__(self, cmd, **kwargs)
 
 
-    def _validate(self) :
-        if self.remote and self.in_pssm :
-            raise ValueError("The remote option cannot be used with in_pssm")
-        if self.query and self.in_pssm :
-            raise ValueError("The query option cannot be used with in_pssm")
-        _NcbiblastCommandline._validate(self)
+class NcbirpstblastnCommandline(_NcbiblastCommandline):
+    """Wrapper for the NCBI BLAST+ program rpstblastn.
+
+    With the release of BLAST+ (BLAST rewritten in C++ instead of C), the NCBI
+    replaced the old rpsblast tool with a similar tool of the same name, and a
+    separate tool rpstblastn for Translated Reverse Position Specific BLAST.
+
+    >>> from Bio.Blast.Applications import NcbirpstblastnCommandline
+    >>> cline = NcbirpstblastnCommandline(help=True)
+    >>> cline
+    NcbirpstblastnCommandline(cmd='rpstblastn', help=True)
+    >>> print cline
+    rpstblastn -help
+
+    You would typically run the command line with the Python subprocess module,
+    as described in the Biopython tutorial.
+    """
+    def __init__(self, cmd="rpstblastn", **kwargs):
+        self.parameters = [ \
+            #Input query options:
+            _Option(["-strand", "strand"], ["input"],
+                    lambda value : value in ["both", "minus", "plus"],0,
+                    """Query strand(s) to search against database/subject.
+
+                    Values allowed are "both" (default), "minus", "plus".""", False),
+            #Input query options:
+            _Option(["-query_gencode", "query_gencode"], ["input"], None, 0,
+                    """Genetic code to use to translate query
+
+                    Integer. Default is one.""", False),
+            #Query filtering options:
+            _Option(["-seg", "seg"], ["input"], None, 0,
+                    """Filter query sequence with SEG (string).
+
+                    Format: "yes", "window locut hicut", or "no" to disable.
+                    Default is "12 2.2 2.5""", False),
+            #Extension options:
+            _Switch(["-ungapped", "ungapped"], ["input"],
+                    "Perform ungapped alignment only?"),
+            ]
+        _NcbiblastCommandline.__init__(self, cmd, **kwargs)
 
 
 def _test():
