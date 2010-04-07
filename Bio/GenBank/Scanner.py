@@ -1,4 +1,4 @@
-# Copyright 2007-2009 by Peter Cock.  All rights reserved.
+# Copyright 2007-2010 by Peter Cock.  All rights reserved.
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
@@ -512,7 +512,7 @@ class EmblScanner(InsdcScanner):
     FEATURE_END_MARKERS = ["XX"] #XX can also mark the end of many things!
     FEATURE_QUALIFIER_INDENT = 21
     FEATURE_QUALIFIER_SPACER = "FT" + " " * (FEATURE_QUALIFIER_INDENT-2)
-    SEQUENCE_HEADERS=["SQ"] #Remove trailing spaces
+    SEQUENCE_HEADERS=["SQ", "CO"] #Remove trailing spaces
 
     def parse_footer(self):
         """returns a tuple containing a list of any misc strings, and the sequence"""
@@ -637,10 +637,12 @@ class EmblScanner(InsdcScanner):
             'SV' : 'version', # SV line removed in June 2006, now part of ID line
             'DE' : 'definition',
             #'RN' : 'reference_num',
+            #'RC' : reference comment... TODO
             #'RP' : 'reference_bases',
             #'RX' : reference cross reference... DOI or Pubmed
-            'RA' : 'authors',
-            'RT' : 'title',
+            'RG' : 'consrtm', #optional consortium
+            #'RA' : 'authors',
+            #'RT' : 'title',
             'RL' : 'journal',
             'OS' : 'organism',
             'OC' : 'taxonomy',
@@ -674,6 +676,14 @@ class EmblScanner(InsdcScanner):
                     # e.g. '1-4639675' becomes '(bases 1 to 4639675)'
                     assert data.count("-")==1
                     consumer.reference_bases("(bases " + data.replace("-", " to ") + ")")
+                elif line_type == 'RT':
+                    #Remove the enclosing quotes and trailing semi colon.
+                    #Note the title can be split over multiple lines.
+                    if data.startswith('"'):
+                        data = data[1:]
+                    if data.endswith('";'):
+                        data = data[:-2]
+                    consumer.title(data)
                 elif line_type == 'RX':
                     # EMBL support three reference types at the moment:
                     # - PUBMED    PUBMED bibliographic database (NLM)
@@ -709,6 +719,14 @@ class EmblScanner(InsdcScanner):
                     # TODO - Data reference...
                     # How should we store the secondary identifier (if present)?  Ignore it?
                     pass
+                elif line_type == 'RA':
+                    # Remove trailing ; at end of authors list
+                    consumer.authors(data.rstrip(";"))
+                elif line_type == 'PR':
+                    # Remove trailing ; at end of the project reference
+                    # In GenBank files this corresponds to the old PROJECT
+                    # line which is being replaced with the DBLINK line.
+                    consumer.project(data.rstrip(";"))
                 elif line_type in consumer_dict:
                     #Its a semi-automatic entry!
                     getattr(consumer, consumer_dict[line_type])(data)
@@ -720,7 +738,26 @@ class EmblScanner(InsdcScanner):
         
     def _feed_misc_lines(self, consumer, lines):
         #TODO - Should we do something with the information on the SQ line(s)?
-        pass
+        lines.append("")
+        line_iter = iter(lines)
+        try:
+            for line in line_iter:
+                if line.startswith("CO   "):
+                    line = line[5:].strip()
+                    contig_location = line
+                    while True:
+                        line = line_iter.next()
+                        if not line:
+                            break
+                        elif line.startswith("CO   "):
+                            #Don't need to preseve the whitespace here.
+                            contig_location += line[5:].strip()
+                        else:
+                            raise ValueError('Expected CO (contig) continuation line, got:\n' + line)
+                    consumer.contig_location(contig_location)
+            return
+        except StopIteration:
+            raise ValueError("Problem in misc lines before sequence")
 
 class GenBankScanner(InsdcScanner):
     """For extracting chunks of information in GenBank files"""

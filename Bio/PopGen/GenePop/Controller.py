@@ -38,7 +38,6 @@ def _read_allele_freq_table(f):
     l = f.readline()
     while l.find(" --")==-1:
         if l == "":
-            self.done = True
             raise StopIteration
         l = f.readline()
     alleles = filter(lambda x: x != '', f.readline().rstrip().split(" "))
@@ -130,7 +129,7 @@ def _hw_func(stream, is_locus, has_fisher = False):
                     loci[locus] = p, se, fis_wc, fis_rh, steps
             return loci
         l = stream.readline()
-    self.done = True
+    #self.done = True
     raise StopIteration
 
 class _FileIterator:
@@ -371,7 +370,7 @@ class GenePopController:
             dememorization, batches, iterations)
 
     #1.3 P file
-    def test_pop_hw_prob(self, fname, enum_test = False,
+    def test_pop_hz_prob(self, fname, ext, enum_test = False,
         dememorization = 10000, batches = 20, iterations = 5000):
         """Hardy-Weinberg test based on probability.
 
@@ -445,6 +444,7 @@ class GenePopController:
         opts = self._get_opts(dememorization, batches, iterations)
         ret, out, err = self._run_genepop([".DIS"], [2, 1], fname, opts)
         def ld_pop_func(self):
+            current_pop = None
             l = self.stream.readline().rstrip()
             if l == "":
                 self.done = True
@@ -455,7 +455,7 @@ class GenePopController:
                 start_locus1, start_locus2 = locus1, locus2
                 current_pop = -1
             if locus1 == start_locus1 and locus2 == start_locus2:
-                currrent_pop += 1
+                current_pop += 1
             if toks[3] == "No":
                 return current_pop, pop, (locus1, locus2), None
             p, se, switches = _gp_float(toks[3]), _gp_float(toks[4]), _gp_int(toks[5])

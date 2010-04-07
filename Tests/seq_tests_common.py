@@ -42,12 +42,12 @@ def compare_reference(old_r, new_r):
     #TODO - assert old_r.comment == new_r.comment
     #Looking at the tables, I *think* the current schema does not
     #allow us to store a reference comment.  Must confirm this.
-    assert new_r.comment == ""
+    assert old_r.comment == new_r.comment or new_r.comment == ""
 
     #TODO - assert old_r.consrtm == new_r.consrtm
     #Looking at the tables, I *think* the current schema does not
     #allow us to store a consortium.
-    assert new_r.consrtm == ""
+    assert old_r.consrtm == new_r.consrtm or new_r.consrtm == ""
     
     if len(old_r.location) == 0:
         assert len(new_r.location) == 0
@@ -305,7 +305,7 @@ def compare_record(old, new):
             #If there is a taxon id recorded, these fields get overwritten
             #by data from the taxon/taxon_name tables.  There is no
             #guarantee that they will be identical after a load/retrieve.
-            assert isinstance(new.annotations[key], str) \
+            assert isinstance(new.annotations[key], basestring) \
                 or isinstance(new.annotations[key], list)
         elif type(old.annotations[key]) == type(new.annotations[key]):
             assert old.annotations[key] == new.annotations[key], \
